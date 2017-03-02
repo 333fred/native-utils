@@ -2,6 +2,8 @@ package edu.wpi.first.nativeutils
 
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.model.*
+import org.gradle.nativeplatform.BuildTypeContainer
+import org.gradle.nativeplatform.Tool
 import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
 import org.gradle.nativeplatform.toolchain.Clang
 import org.gradle.nativeplatform.toolchain.Gcc
@@ -11,37 +13,66 @@ import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
 
-@Managed interface BuildConfig {
+@Managed
+interface BuildConfig {
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setArchitecture(String arch)
+
     String getArchitecture()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setOperatingSystem(String os)
+
     String getOperatingSystem()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setToolChainPrefix(String prefix)
+
     String getToolChainPrefix()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setCompilerArgs(List<String> args)
+
     List<String> getCompilerArgs()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
+    void setDebugCompilerArgs(List<String> args)
+
+    List<String> getDebugCompilerArgs()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setDebugLinkerArgs(List<String> args)
+
+    List<String> getDebugLinkerArgs()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setReleaseCompilerArgs(List<String> args)
+
+    List<String> getReleaseCompilerArgs()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setReleaseLinkerArgs(List<String> args)
+
+    List<String> getReleaseLinkerArgs()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
     void setLinkerArgs(List<String> args)
+
     List<String> getLinkerArgs()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setCrossCompile(boolean cc)
+
     boolean getCrossCompile()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setCompilerFamily(String family)
+
     String getCompilerFamily()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setExclude(List<String> toExclude)
+
     List<String> getExclude()
 }
 
@@ -50,19 +81,22 @@ interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
     @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('buildConfigs') void createBuildConfigs(BuildConfigSpec configs) {}
+    @Model('buildConfigs')
+    void createBuildConfigs(BuildConfigSpec configs) {}
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Validate void validateCompilerFamilyExists(BuildConfigSpec configs) {
+    @Validate
+    void validateCompilerFamilyExists(BuildConfigSpec configs) {
         configs.each { config ->
             assert config.compilerFamily == 'VisualCpp' ||
-                   config.compilerFamily == 'Gcc' ||
-                   config.compilerFamily == 'Clang'
+                    config.compilerFamily == 'Gcc' ||
+                    config.compilerFamily == 'Clang'
         }
     }
 
     @SuppressWarnings("GrMethodMayBeStatic")
-    @Validate void validateOsExists(BuildConfigSpec configs) {
+    @Validate
+    void validateOsExists(BuildConfigSpec configs) {
         def validOs = ['windows', 'osx', 'linux', 'unix']
         configs.each { config ->
             assert validOs.contains(config.operatingSystem.toLowerCase())
@@ -70,7 +104,8 @@ class BuildConfigRules extends RuleSource {
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Validate void setTargetPlatforms(ComponentSpecContainer components, BuildConfigSpec configs) {
+    @Validate
+    void setTargetPlatforms(ComponentSpecContainer components, BuildConfigSpec configs) {
         components.each { component ->
             configs.findAll { isConfigEnabled(it) }.each { config ->
                 if (config.exclude == null || !config.exclude.contains(component.name)) {
@@ -81,7 +116,16 @@ class BuildConfigRules extends RuleSource {
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate void disableCrossCompileGoogleTest(BinaryContainer binaries, BuildConfigSpec configs) {
+    @Mutate
+    void addBuildTypes(BuildTypeContainer buildTypes) {
+        ['debug', 'release'].each {
+            buildTypes.create(it)
+        }
+    }
+
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
+    void disableCrossCompileGoogleTest(BinaryContainer binaries, BuildConfigSpec configs) {
         def crossCompileConfigs = configs.findAll { it.crossCompile }.collect { it.architecture }
         if (crossCompileConfigs != null && !crossCompileConfigs.empty) {
             binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
@@ -93,7 +137,8 @@ class BuildConfigRules extends RuleSource {
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate void createPlatforms(PlatformContainer platforms, BuildConfigSpec configs) {
+    @Mutate
+    void createPlatforms(PlatformContainer platforms, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
@@ -110,8 +155,60 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
+    @Validate
+    void setDebugToolChainArgs(BinaryContainer binaries, BuildConfigSpec configs) {
+        if (configs == null) {
+            return
+        }
+
+        def enabledConfigs = configs.findAll {
+            isConfigEnabled(it) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
+        }
+        if (enabledConfigs == null || enabledConfigs.empty) {
+            return
+        }
+
+        binaries.findAll { it.buildType.name == 'debug' }.each { binary ->
+            println binary
+            def config = enabledConfigs.find {
+                it.architecture == binary.targetPlatform.architecture.name &&
+                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+            }
+            if (config != null) {
+                addArgsToTool(binary.cppCompiler, config.debugCompilerArgs)
+                addArgsToTool(binary.linker, config.debugLinkerArgs)
+            }
+        }
+    }
+
+    @Validate
+    void setReleaseToolChainArgs(BinaryContainer binaries, BuildConfigSpec configs) {
+        if (configs == null) {
+            return
+        }
+
+        def enabledConfigs = configs.findAll {
+            isConfigEnabled(it) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
+        }
+        if (enabledConfigs == null || enabledConfigs.empty) {
+            return
+        }
+
+        binaries.findAll { it.buildType.name == 'release' }.each { binary ->
+            def config = enabledConfigs.find {
+                it.architecture == binary.targetPlatform.architecture.name &&
+                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+            }
+            if (config != null) {
+                addArgsToTool(binary.cppCompiler, config.releaseCompilerArgs)
+                addArgsToTool(binary.linker, config.releaseLinkerArgs)
+            }
+        }
+    }
+
     @SuppressWarnings("GroovyUnusedDeclaration")
-    @Mutate void createToolChains(NativeToolChainRegistry toolChains, BuildConfigSpec configs) {
+    @Mutate
+    void createToolChains(NativeToolChainRegistry toolChains, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
@@ -131,12 +228,12 @@ class BuildConfigRules extends RuleSource {
                         }
 
                         if (config.compilerArgs != null) {
-                            toolChain.cppCompiler.withArguments { args -> 
+                            toolChain.cppCompiler.withArguments { args ->
                                 config.compilerArgs.each { a -> args.add(a) }
                             }
                         }
                         if (config.linkerArgs != null) {
-                            toolChain.linker.withArguments { args -> 
+                            toolChain.linker.withArguments { args ->
                                 config.linkerArgs.each { a -> args.add(a) }
                             }
                         }
@@ -159,12 +256,12 @@ class BuildConfigRules extends RuleSource {
                         }
 
                         if (config.compilerArgs != null) {
-                            cppCompiler.withArguments { args -> 
+                            cppCompiler.withArguments { args ->
                                 config.compilerArgs.each { a -> args.add(a) }
                             }
                         }
                         if (config.linkerArgs != null) {
-                            linker.withArguments { args -> 
+                            linker.withArguments { args ->
                                 config.linkerArgs.each { a -> args.add(a) }
                             }
                         }
@@ -187,18 +284,35 @@ class BuildConfigRules extends RuleSource {
                         }
 
                         if (config.compilerArgs != null) {
-                            cppCompiler.withArguments { args -> 
+                            cppCompiler.withArguments { args ->
                                 config.compilerArgs.each { a -> args.add(a) }
                             }
                         }
                         if (config.linkerArgs != null) {
-                            linker.withArguments { args -> 
+                            linker.withArguments { args ->
                                 config.linkerArgs.each { a -> args.add(a) }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    private void addArgsToTool(Tool tool, args) {
+        if (args != null) {
+            tool.args.addAll((List<String>)args)
+        }
+    }
+
+    private Class getCompilerFamily(String family) {
+        switch (family) {
+            case 'VisualCpp':
+                return VisualCpp
+            case 'Gcc':
+                return Gcc
+            case 'Clang':
+                return Clang
         }
     }
 
