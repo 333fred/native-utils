@@ -1,0 +1,33 @@
+plugins {
+    id 'groovy'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+dependencies {
+    compile localGroovy()
+}
+
+gradlePlugin {
+    plugins {
+        NativeUtils {
+            id = 'edu.wpi.first.native-utils'
+            implementationClass = 'edu.wpi.first.nativeutils.NativeUtils'
+        }
+    }
+}
+
+version = '0.1-SNAPSHOT'
+group = 'edu.wpi.first'
+
+publishing {
+    publications {
+        plugin(MavenPublication) {
+            artifact jar
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.3'
+}
