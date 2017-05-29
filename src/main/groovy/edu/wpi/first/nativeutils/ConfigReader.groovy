@@ -21,6 +21,11 @@ interface BuildConfig {
     String getArchitecture()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
+    void setIsArm(boolean isArm)
+
+    boolean getIsArm()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
     void setOperatingSystem(String os)
 
     String getOperatingSystem()
@@ -325,17 +330,35 @@ class BuildConfigRules extends RuleSource {
         }
 
         def currentOs;
+        def isArm;
 
         if (OperatingSystem.current().isWindows()) {
             currentOs = 'windows'
+            isArm = false
         } else if (OperatingSystem.current().isMacOsX()) {
             currentOs = 'osx'
+            isArm = false
         } else if (OperatingSystem.current().isLinux()) {
             currentOs = 'linux'
+            def arch = System.getProperty("os.arch")
+            if (arch == 'amd64' || arch == 'i386') {
+                isArm = false
+            } else {
+                isArm = true
+            }
         } else if (OperatingSystem.current().isUnix()) {
             currentOs = 'unix'
+            def arch = System.getProperty("os.arch")
+            if (arch == 'amd64' || arch == 'i386') {
+                isArm = false
+            } else {
+                isArm = true
+            }
         }
 
-        return currentOs == config.operatingSystem.toLowerCase()
+
+
+        return currentOs == config.operatingSystem.toLowerCase() &&
+               isArm == config.isArm
     }
 }
