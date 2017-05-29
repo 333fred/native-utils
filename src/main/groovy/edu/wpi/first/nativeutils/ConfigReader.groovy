@@ -379,8 +379,10 @@ class BuildConfigRules extends RuleSource {
 
         try {
             toolSearchPath.locate(ToolType.CPP_COMPILER, config.toolChainPrefix + "g++")
+            System.out.println("Found toolchain " + config.toolChainPrefix);
             return true;
         } catch (GradleException e) {
+            System.out.println("Failed to find toolchain " + config.toolChainPrefix);
             return false;
         }
     }
