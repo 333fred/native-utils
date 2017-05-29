@@ -9,6 +9,9 @@ import org.gradle.nativeplatform.toolchain.Clang
 import org.gradle.nativeplatform.toolchain.Gcc
 import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry
 import org.gradle.nativeplatform.toolchain.VisualCpp
+import org.gradle.nativeplatform.toolchain.internal.tools.ToolSearchPath
+import org.gradle.nativeplatform.toolchain.internal.ToolType
+import org.gradle.api.GradleException
 import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
@@ -85,6 +88,12 @@ interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
+    private static final ToolSearchPath toolSearchPath;
+
+    static {
+        toolSearchPath = new ToolSearchPath(OperatingSystem.current())
+    }
+
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
@@ -322,11 +331,12 @@ class BuildConfigRules extends RuleSource {
     }
 
     /**
-     * If a config is crosscompiling, always enable. Otherwise, only enable if the current os is the config os.
+     * If a config is crosscompiling, only enable for athena. Otherwise, only enable if the current os is the config os,
+     * or specific cross compiler is specified
      */
     private boolean isConfigEnabled(BuildConfig config) {
         if (config.crossCompile) {
-            return true
+            return doesToolChainExist(config)
         }
 
         def currentOs;
@@ -360,5 +370,18 @@ class BuildConfigRules extends RuleSource {
 
         return currentOs == config.operatingSystem.toLowerCase() &&
                isArm == config.isArm
+    }
+
+    private boolean doesToolChainExist(BuildConfig config) {
+        if (!config.crossCompile) {
+            return true;
+        }
+
+        try {
+            toolSearchPath.locate(ToolType.CPP_COMPILER, config.toolChainPrefix + "g++")
+            return true;
+        } catch (GradleException e) {
+            return false;
+        }
     }
 }
