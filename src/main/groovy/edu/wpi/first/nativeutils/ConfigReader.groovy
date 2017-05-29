@@ -238,8 +238,9 @@ class BuildConfigRules extends RuleSource {
                 t.eachPlatform { toolChain ->
                     def config = vcppConfigs.find { it.architecture == toolChain.platform.architecture.name }
                     if (config != null) {
-                        if (config.toolChainPath != null) {
-                            path(config.toolChainPath)
+                        def vsToolPath = NativeUtils.getToolChainPath(config)
+                        if (vsToolPath != null) {
+                            path(vsToolPath)
                         }
                         if (config.toolChainPrefix != null) {
                             toolChain.cCompiler.executable = config.toolChainPrefix + toolChain.cCompiler.executable
@@ -269,8 +270,9 @@ class BuildConfigRules extends RuleSource {
             toolChains.create('gcc', Gcc.class) {
                 gccConfigs.each { config ->
                     target(config.architecture) {
-                        if (config.toolChainPath != null) {
-                            path(config.toolChainPath)
+                        def gccToolPath = NativeUtils.getToolChainPath(config)
+                        if (gccToolPath != null) {
+                            path(gccToolPath)
                         }
                         if (config.toolChainPrefix != null) {
                             cCompiler.executable = config.toolChainPrefix + cCompiler.executable
@@ -300,8 +302,9 @@ class BuildConfigRules extends RuleSource {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->
                     target(config.architecture) {
-                        if (config.toolChainPath != null) {
-                            path(config.toolChainPath)
+                        def clangToolPath = NativeUtils.getToolChainPath(config)
+                        if (clangToolPath != null) {
+                            path(clangToolPath)
                         }
                         if (config.toolChainPrefix != null) {
                             cCompiler.executable = config.toolChainPrefix + cCompiler.executable
@@ -391,7 +394,9 @@ class BuildConfigRules extends RuleSource {
             return true;
         }
 
-        def toolPath = config.toolChainPath == null ? "" : config.toolChainPath
+        def path = NativeUtils.getToolChainPath(config)
+
+        def toolPath = path == null ? "" : path
 
         return toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable();
     }
