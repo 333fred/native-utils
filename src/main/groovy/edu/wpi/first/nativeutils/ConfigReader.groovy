@@ -29,6 +29,11 @@ interface BuildConfig {
     boolean getIsArm()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
+    void setToolChainPath(String path)
+
+    String getToolChainPath()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
     void setOperatingSystem(String os)
 
     String getOperatingSystem()
@@ -233,6 +238,9 @@ class BuildConfigRules extends RuleSource {
                 t.eachPlatform { toolChain ->
                     def config = vcppConfigs.find { it.architecture == toolChain.platform.architecture.name }
                     if (config != null) {
+                        if (config.toolChainPath != null) {
+                            path(config.toolChainPath)
+                        }
                         if (config.toolChainPrefix != null) {
                             toolChain.cCompiler.executable = config.toolChainPrefix + toolChain.cCompiler.executable
                             toolChain.cppCompiler.executable = config.toolChainPrefix + toolChain.cppCompiler.executable
@@ -261,6 +269,9 @@ class BuildConfigRules extends RuleSource {
             toolChains.create('gcc', Gcc.class) {
                 gccConfigs.each { config ->
                     target(config.architecture) {
+                        if (config.toolChainPath != null) {
+                            path(config.toolChainPath)
+                        }
                         if (config.toolChainPrefix != null) {
                             cCompiler.executable = config.toolChainPrefix + cCompiler.executable
                             cppCompiler.executable = config.toolChainPrefix + cppCompiler.executable
@@ -289,6 +300,9 @@ class BuildConfigRules extends RuleSource {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->
                     target(config.architecture) {
+                        if (config.toolChainPath != null) {
+                            path(config.toolChainPath)
+                        }
                         if (config.toolChainPrefix != null) {
                             cCompiler.executable = config.toolChainPrefix + cCompiler.executable
                             cppCompiler.executable = config.toolChainPrefix + cppCompiler.executable
@@ -377,6 +391,8 @@ class BuildConfigRules extends RuleSource {
             return true;
         }
 
-        return toolSearchPath.locate(ToolType.CPP_COMPILER, config.toolChainPrefix + "g++").isAvailable();
+        def toolPath = config.toolChainPath == null ? "" : config.toolChainPath
+
+        return toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable();
     }
 }
