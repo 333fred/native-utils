@@ -3,6 +3,7 @@ package edu.wpi.first.nativeutils
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.api.Task
 import org.gradle.api.tasks.bundling.Zip
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.model.*
 import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.Tool
@@ -164,11 +165,9 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
-        println projectLayout.projectIdentifier.name
         buildTypes.each { buildType ->
             configs.findAll { isConfigEnabled(it) }.each { config ->
                 def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
-                println taskName
                 tasks.create(taskName, Zip) { task ->
                     description = 'Creates platform zip of the libraries'
                     destinationDir =  projectLayout.buildDir
@@ -183,20 +182,53 @@ class BuildConfigRules extends RuleSource {
                             if (binary instanceof SharedLibraryBinarySpec) {
                                 dependsOn binary.buildTask
                                 from(new File(binary.sharedLibraryFile.absolutePath + ".debug")) {
-                                    into NativeUtils.getPlatformPath(config)
+                                    into NativeUtils.getPlatformPath(config) + '/shared'
                                 }
                                 from (binary.sharedLibraryFile) {
-                                    into NativeUtils.getPlatformPath(config)
+                                    into NativeUtils.getPlatformPath(config) + '/shared'
                                 }
                             } else if (binary instanceof StaticLibraryBinarySpec) {
                                 dependsOn binary.buildTask
                                 from (binary.staticLibraryFile) {
+                                    into NativeUtils.getPlatformPath(config) + '/static'
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                def jniTaskName = taskName + 'jni'
+
+                tasks.create(jniTaskName, Jar) { task ->
+                    description = 'Creates jni jar of the libraries'
+                    destinationDir =  projectLayout.buildDir
+                    classifier = config.operatingSystem + config.architecture
+                    baseName = 'jni'
+                    duplicatesStrategy = 'exclude'
+
+                    binaries.each { binary ->
+                        if (binary.targetPlatform.architecture.name == config.architecture
+                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                            && binary.buildType.name == buildType.name) {
+                            if (binary instanceof SharedLibraryBinarySpec) {
+                                dependsOn binary.buildTask
+                                from (binary.sharedLibraryFile) {
                                     into NativeUtils.getPlatformPath(config)
                                 }
                             }
                         }
                     }
                 }
+
+                def zipTask = tasks.get(taskName)
+                def jniTask = tasks.get(jniTaskName)
+                def buildTask = tasks.get('build')
+
+                buildTask.dependsOn zipTask
+                buildTask.dependsOn jniTask
+
+                //println zipTask
+                //println jniTask
             }
         }
         
