@@ -1,10 +1,15 @@
 package edu.wpi.first.nativeutils
 
 import org.gradle.internal.os.OperatingSystem
+import org.gradle.api.Task
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.model.*
 import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.Tool
 import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
+import org.gradle.language.base.internal.ProjectLayout;
+import org.gradle.nativeplatform.SharedLibraryBinarySpec
+import org.gradle.nativeplatform.StaticLibraryBinarySpec
 import org.gradle.nativeplatform.toolchain.Clang
 import org.gradle.nativeplatform.toolchain.Gcc
 import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry
@@ -157,6 +162,49 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
+    void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+                        ProjectLayout projectLayout, BuildConfigSpec configs) {
+        println projectLayout.projectIdentifier.name
+        buildTypes.each { buildType ->
+            configs.findAll { isConfigEnabled(it) }.each { config ->
+                def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
+                println taskName
+                tasks.create(taskName, Zip) { task ->
+                    description = 'Creates platform zip of the libraries'
+                    destinationDir =  projectLayout.buildDir
+                    classifier = config.operatingSystem + config.architecture
+                    baseName = 'zip'
+                    duplicatesStrategy = 'exclude'
+
+                    binaries.each { binary ->
+                        if (binary.targetPlatform.architecture.name == config.architecture
+                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                            && binary.buildType.name == buildType.name) {
+                            if (binary instanceof SharedLibraryBinarySpec) {
+                                dependsOn binary.buildTask
+                                from(new File(binary.sharedLibraryFile.absolutePath + ".debug")) {
+                                    into NativeUtils.getPlatformPath(config)
+                                }
+                                from (binary.sharedLibraryFile) {
+                                    into NativeUtils.getPlatformPath(config)
+                                }
+                            } else if (binary instanceof StaticLibraryBinarySpec) {
+                                dependsOn binary.buildTask
+                                from (binary.staticLibraryFile) {
+                                    into NativeUtils.getPlatformPath(config)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
+
+
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
     void createPlatforms(PlatformContainer platforms, BuildConfigSpec configs) {
         if (configs == null) {
             return
@@ -188,7 +236,6 @@ class BuildConfigRules extends RuleSource {
         }
 
         binaries.findAll { it.buildType.name == 'debug' }.each { binary ->
-            println binary
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
                         getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
