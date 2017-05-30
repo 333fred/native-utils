@@ -161,6 +161,46 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
+    private String binTools(String tool, BuildConfig config) {
+        def toolChainPath = NativeUtils.getToolChainPath(config)
+        def compilerPrefix = config.toolChainPrefix
+        if (toolChainPath != null) return "${toolChainPath}/${compilerPrefix}${tool}"
+        return "${compilerPrefix}${tool}"
+    }
+
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
+    void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildConfigSpec configs) {
+        configs.findAll { isConfigEnabled(it) }.each { config ->
+            binaries.each { binary ->
+                if (binary.targetPlatform.architecture.name == config.architecture
+                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                    && binary.buildType.name == 'release' 
+                    && binary.targetPlatform.operatingSystem.name != 'windows'
+                    && binary instanceof SharedLibraryBinarySpec) {
+                    def input = binary.buildTask.name
+                    def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
+                    def task = tasks.get(linkTaskName)
+                    if (binary.targetPlatform.operatingSystem.name == 'osx') {
+                        def library = task.outputFile.absolutePath
+                        task.doLast {
+                            "dsymutil ${library}".execute()
+                            "strip -S ${library}".execute()
+                        }
+                    } else {
+                        def library = task.outputFile.absolutePath
+                        def debugLibrary = task.outputFile.absolutePath + ".debug"
+                        task.doLast {
+                            "${binTools('objcopy', config)} --only-keep-debug ${library} ${debugLibrary}".execute()
+                            "${binTools('strip', config)} -g ${library}".execute()
+                            "${binTools('objcopy', config)} --add-gnu-debuglink=${debugLibrary} ${library}".execute()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
