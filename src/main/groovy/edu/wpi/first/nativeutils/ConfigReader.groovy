@@ -226,9 +226,6 @@ class BuildConfigRules extends RuleSource {
 
                 buildTask.dependsOn zipTask
                 buildTask.dependsOn jniTask
-
-                //println zipTask
-                //println jniTask
             }
         }
         
