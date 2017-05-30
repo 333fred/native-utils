@@ -170,6 +170,45 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
+    void createJniCheckTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+                        ProjectLayout projectLayout, BuildConfigSpec configs) {
+        def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
+        if (jniSymbolFunc == null) {
+            return;
+        }
+        configs.findAll { isConfigEnabled(it) }.each { config ->
+            binaries.each { binary ->
+                if (binary.targetPlatform.architecture.name == config.architecture
+                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                    && binary.buildType.name == 'release' 
+                    && binary.targetPlatform.operatingSystem.name != 'windows'
+                    && binary instanceof SharedLibraryBinarySpec) {
+                    def input = binary.buildTask.name
+                    def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
+                    def task = tasks.get(linkTaskName)
+                    task.doLast {
+                        def library = task.outputFile.absolutePath
+                        def nmOutput = "${binTools('nm', config)} ${library}".execute().text
+
+                        def nmSymbols = nmOutput.toString().replace('\r', '')
+
+                        def symbolList = jniSymbolFunc()
+
+                        symbolList.each {
+                            //Add \n so we can check for the exact symbol
+                            def found = nmSymbols.contains(it + '\n')
+                            if (!found) {
+                                throw new GradleException("Found a definition that does not have a matching symbol ${it}")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildConfigSpec configs) {
         configs.findAll { isConfigEnabled(it) }.each { config ->
             binaries.each { binary ->
