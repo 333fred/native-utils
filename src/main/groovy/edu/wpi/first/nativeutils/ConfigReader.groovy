@@ -21,6 +21,7 @@ import org.gradle.nativeplatform.toolchain.internal.ToolType
 import org.gradle.api.GradleException
 import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
+import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.platform.base.PlatformContainer
 
 @Managed
@@ -178,7 +179,7 @@ class BuildConfigRules extends RuleSource {
             return;
         }
         configs.findAll { isConfigEnabled(it) }.each { config ->
-            binaries.findAll { !isJavaProject(it) }.each { binary ->
+            binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                     && binary.buildType.name == 'release' 
@@ -212,7 +213,7 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildConfigSpec configs) {
         configs.findAll { isConfigEnabled(it) }.each { config ->
-            binaries.findAll { !isJavaProject(it) }.each { binary ->
+            binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                     && binary.buildType.name == 'release' 
@@ -255,7 +256,7 @@ class BuildConfigRules extends RuleSource {
                     baseName = 'zip'
                     duplicatesStrategy = 'exclude'
 
-                    binaries.findAll { !isJavaProject(it) }.each { binary ->
+                    binaries.findAll { isNativeProject(it) }.each { binary ->
                         if (binary.targetPlatform.architecture.name == config.architecture
                             && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                             && binary.buildType.name == buildType.name) {
@@ -286,7 +287,7 @@ class BuildConfigRules extends RuleSource {
                     baseName = 'jni'
                     duplicatesStrategy = 'exclude'
 
-                    binaries.findAll { !isJavaProject(it) }.each { binary ->
+                    binaries.findAll { isNativeProject(it) }.each { binary ->
                         if (binary.targetPlatform.architecture.name == config.architecture
                             && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                             && binary.buildType.name == buildType.name) {
@@ -345,7 +346,7 @@ class BuildConfigRules extends RuleSource {
         }
 
         binaries.findAll { 
-            !isJavaProject(it) && it.buildType.name == 'debug' }.each { binary ->
+            isNativeProject(it) && it.buildType.name == 'debug' }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
                         getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
@@ -371,7 +372,7 @@ class BuildConfigRules extends RuleSource {
         }
 
         binaries.findAll { 
-            !isJavaProject(it) && it.buildType.name == 'release' }.each { binary ->
+            isNativeProject(it) && it.buildType.name == 'release' }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
                         getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
@@ -505,8 +506,8 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
-    private boolean isJavaProject(BinarySpec binary) {
-        return binary.toolChain.getClass().name.contains("JavaToolChain")
+    private boolean isNativeProject(BinarySpec binary) {
+        return binary instanceof NativeBinarySpec
     }
 
     /**
