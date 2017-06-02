@@ -159,9 +159,11 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void addBuildTypes(BuildTypeContainer buildTypes) {
-        ['debug', 'release'].each {
-            buildTypes.create(it)
+    void addBuildTypes(BuildTypeContainer buildTypes, ProjectLayout projectLayout) {
+        if (projectLayout.projectIdentifier.hasProperty('releaseBuild')) {
+            buildTypes.create('release')
+        } else {
+            buildTypes.create('debug')
         }
     }
 
