@@ -9,7 +9,7 @@ import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.Tool
 import org.gradle.platform.base.BinarySpec
 import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
-import org.gradle.language.base.internal.ProjectLayout;
+import org.gradle.language.base.internal.ProjectLayout
 import org.gradle.nativeplatform.SharedLibraryBinarySpec
 import org.gradle.nativeplatform.StaticLibraryBinarySpec
 import org.gradle.nativeplatform.toolchain.Clang
@@ -147,9 +147,9 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
-    void setTargetPlatforms(ComponentSpecContainer components, BuildConfigSpec configs) {
+    void setTargetPlatforms(ComponentSpecContainer components, ProjectLayout projectLayout, BuildConfigSpec configs) {
         components.each { component ->
-            configs.findAll { isConfigEnabled(it) }.each { config ->
+            configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
                 if (config.exclude == null || !config.exclude.contains(component.name)) {
                     component.targetPlatform config.architecture
                 }
@@ -180,19 +180,20 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void setSkipGoogleTest(BinaryContainer binaries, BuildConfigSpec configs) {
+    void setSkipGoogleTest(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        def skipAllTests = projectLayout.projectIdentifier.hasProperty('skipAllTests')
         def skipConfigs = configs.findAll { it.skipTests }.collect { it.architecture }
         if (skipConfigs != null && !skipConfigs.empty) {
             binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
-                if (skipConfigs.contains(spec.targetPlatform.architecture.name)) {
+                if (skipConfigs.contains(spec.targetPlatform.architecture.name) || skipAllTests) {
                     spec.buildable = false
                 }
             }
         }
     }
 
-    private String binTools(String tool, BuildConfig config) {
-        def toolChainPath = NativeUtils.getToolChainPath(config)
+    private String binTools(String tool, ProjectLayout projectLayout, BuildConfig config) {
+        def toolChainPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
         def compilerPrefix = config.toolChainPrefix
         if (toolChainPath != null) return "${toolChainPath}/${compilerPrefix}${tool}"
         return "${compilerPrefix}${tool}"
@@ -206,7 +207,7 @@ class BuildConfigRules extends RuleSource {
         if (jniSymbolFunc == null) {
             return;
         }
-        configs.findAll { isConfigEnabled(it) }.each { config ->
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
@@ -239,8 +240,8 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildConfigSpec configs) {
-        configs.findAll { isConfigEnabled(it) }.each { config ->
+    void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
@@ -260,9 +261,9 @@ class BuildConfigRules extends RuleSource {
                         def library = task.outputFile.absolutePath
                         def debugLibrary = task.outputFile.absolutePath + ".debug"
                         task.doLast {
-                            "${binTools('objcopy', config)} --only-keep-debug ${library} ${debugLibrary}".execute()
-                            "${binTools('strip', config)} -g ${library}".execute()
-                            "${binTools('objcopy', config)} --add-gnu-debuglink=${debugLibrary} ${library}".execute()
+                            "${binTools('objcopy', projectLayout, config)} --only-keep-debug ${library} ${debugLibrary}".execute()
+                            "${binTools('strip', projectLayout, config)} -g ${library}".execute()
+                            "${binTools('objcopy', projectLayout, config)} --add-gnu-debuglink=${debugLibrary} ${library}".execute()
                         }
                     }
                 }
@@ -275,7 +276,7 @@ class BuildConfigRules extends RuleSource {
     void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
         buildTypes.each { buildType ->
-            configs.findAll { isConfigEnabled(it) }.each { config ->
+            configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
                 def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
                 tasks.create(taskName, Zip) { task ->
                     description = 'Creates platform zip of the libraries'
@@ -343,12 +344,12 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createPlatforms(PlatformContainer platforms, BuildConfigSpec configs) {
+    void createPlatforms(PlatformContainer platforms, ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
 
-        configs.findAll { isConfigEnabled(it) }.each { config ->
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
             if (config.architecture != null) {
                 platforms.create(config.architecture) { platform ->
                     platform.architecture config.architecture
@@ -361,13 +362,13 @@ class BuildConfigRules extends RuleSource {
     }
 
     @Validate
-    void setDebugToolChainArgs(BinaryContainer binaries, BuildConfigSpec configs) {
+    void setDebugToolChainArgs(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
 
         def enabledConfigs = configs.findAll {
-            isConfigEnabled(it) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
+            isConfigEnabled(it, projectLayout) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
@@ -387,13 +388,13 @@ class BuildConfigRules extends RuleSource {
     }
 
     @Validate
-    void setReleaseToolChainArgs(BinaryContainer binaries, BuildConfigSpec configs) {
+    void setReleaseToolChainArgs(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
 
         def enabledConfigs = configs.findAll {
-            isConfigEnabled(it) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
+            isConfigEnabled(it, projectLayout) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
@@ -413,26 +414,26 @@ class BuildConfigRules extends RuleSource {
     }
 
     @Validate
-    void storeAllBuildConfigs(BuildConfigSpec configs) {
-        configs.findAll { isConfigEnabled(it) }.each {
+    void storeAllBuildConfigs(BuildConfigSpec configs, ProjectLayout projectLayout) {
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each {
             NativeUtils.buildConfigs.add(it)
         }
     }
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Mutate
-    void createToolChains(NativeToolChainRegistry toolChains, BuildConfigSpec configs) {
+    void createToolChains(NativeToolChainRegistry toolChains, ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
 
-        def vcppConfigs = configs.findAll { isConfigEnabled(it) && it.compilerFamily == 'VisualCpp' }
+        def vcppConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'VisualCpp' }
         if (vcppConfigs != null && !vcppConfigs.empty) {
             toolChains.create('visualCpp', VisualCpp.class) { t ->
                 t.eachPlatform { toolChain ->
                     def config = vcppConfigs.find { it.architecture == toolChain.platform.architecture.name }
                     if (config != null) {
-                        def vsToolPath = NativeUtils.getToolChainPath(config)
+                        def vsToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
                         if (vsToolPath != null) {
                             path(vsToolPath)
                         }
@@ -459,12 +460,12 @@ class BuildConfigRules extends RuleSource {
             }
         }
 
-        def gccConfigs = configs.findAll { isConfigEnabled(it) && it.compilerFamily == 'Gcc' }
+        def gccConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Gcc' }
         if (gccConfigs != null && !gccConfigs.empty) {
             toolChains.create('gcc', Gcc.class) {
                 gccConfigs.each { config ->
                     target(config.architecture) {
-                        def gccToolPath = NativeUtils.getToolChainPath(config)
+                        def gccToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
                         if (gccToolPath != null) {
                             path(gccToolPath)
                         }
@@ -491,12 +492,12 @@ class BuildConfigRules extends RuleSource {
             }
         }
 
-        def clangConfigs = configs.findAll { isConfigEnabled(it) && it.compilerFamily == 'Clang' }
+        def clangConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Clang' }
         if (clangConfigs != null && !clangConfigs.empty) {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->
                     target(config.architecture) {
-                        def clangToolPath = NativeUtils.getToolChainPath(config)
+                        def clangToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
                         if (clangToolPath != null) {
                             path(clangToolPath)
                         }
@@ -549,9 +550,9 @@ class BuildConfigRules extends RuleSource {
      * If a config is crosscompiling, only enable for athena. Otherwise, only enable if the current os is the config os,
      * or specific cross compiler is specified
      */
-    private boolean isConfigEnabled(BuildConfig config) {
+    private boolean isConfigEnabled(BuildConfig config, ProjectLayout projectLayout) {
         if (config.crossCompile) {
-            return doesToolChainExist(config)
+            return doesToolChainExist(config, projectLayout)
         }
 
         def currentOs;
@@ -587,12 +588,12 @@ class BuildConfigRules extends RuleSource {
                isArm == config.isArm
     }
 
-    private boolean doesToolChainExist(BuildConfig config) {
+    private boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {
         if (!config.crossCompile) {
             return true;
         }
 
-        def path = NativeUtils.getToolChainPath(config)
+        def path = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
 
         def toolPath = path == null ? "" : path
 
