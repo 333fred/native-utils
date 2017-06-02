@@ -18,6 +18,12 @@ public class NativeUtils implements Plugin<Project> {
         return config.toolChainPath
     }
 
+    static final ArrayList<BuildConfig> buildConfigs = new ArrayList<>();
+
+    public static ArrayList<BuildConfig> getBuildConfigs() {
+        return buildConfigs
+    }
+
     public static String getPlatformPath(BuildConfig config) {
         return config.operatingSystem + '/' + config.architecture
     }

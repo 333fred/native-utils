@@ -384,6 +384,13 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
+    @Validate
+    void storeAllBuildConfigs(BuildConfigSpec configs) {
+        configs.findAll { isConfigEnabled(it) }.each {
+            NativeUtils.buildConfigs.add(it)
+        }
+    }
+
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Mutate
     void createToolChains(NativeToolChainRegistry toolChains, BuildConfigSpec configs) {
