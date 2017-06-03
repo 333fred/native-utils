@@ -394,7 +394,7 @@ class BuildConfigRules extends RuleSource {
                 }
             } else {
                 // Non headers task
-                configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+                configs.findAll { isConfigEnabled(it, projectLayout) && fileWithoutZip.endsWith("${NativeUtils.getClassifier(it)}.")}.each { config ->
                     def classifier = NativeUtils.getClassifier(config)
                     def downloadTaskName = "download${depName}${classifier}"
                     def downloadTask = rootProject.tasks.findByPath(downloadTaskName)
