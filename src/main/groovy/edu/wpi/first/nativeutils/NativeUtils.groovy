@@ -1,8 +1,8 @@
 package edu.wpi.first.nativeutils
 
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.nativeplatform.Tool
 
@@ -73,6 +73,9 @@ public class NativeUtils implements Plugin<Project> {
         return binary.targetPlatform.operatingSystem + binary.targetPlatform.architecture
     }
 
+    /**
+     * Sets an include flag in the compiler that is platform specific
+     */
     public static String setPlatformSpecificIncludeFlag(String loc, Tool cppCompiler) {
         if (OperatingSystem.current().isWindows()) {
             cppCompiler.args "/I$loc"

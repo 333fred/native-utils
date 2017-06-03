@@ -1,192 +1,37 @@
 package edu.wpi.first.nativeutils
 
-import org.gradle.internal.os.OperatingSystem
+import org.gradle.api.GradleException
+import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.api.tasks.Copy
-import org.gradle.api.Project
-import org.gradle.api.tasks.bundling.Jar
-import org.gradle.model.*
-import org.gradle.api.file.FileCollection
-import org.gradle.nativeplatform.BuildTypeContainer
-import org.gradle.nativeplatform.Tool
-import org.gradle.platform.base.BinarySpec
-import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.language.base.internal.ProjectLayout
+import org.gradle.language.cpp.tasks.CppCompile
+import org.gradle.model.*
+import org.gradle.nativeplatform.BuildTypeContainer
+import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.nativeplatform.SharedLibraryBinarySpec
 import org.gradle.nativeplatform.StaticLibraryBinarySpec
+import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
+import org.gradle.nativeplatform.Tool
 import org.gradle.nativeplatform.toolchain.Clang
 import org.gradle.nativeplatform.toolchain.Gcc
-import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry
-import org.gradle.nativeplatform.toolchain.VisualCpp
 import org.gradle.nativeplatform.toolchain.internal.tools.ToolSearchPath
 import org.gradle.nativeplatform.toolchain.internal.ToolType
-import org.gradle.api.GradleException
-import org.gradle.nativeplatform.NativeDependencySet
+import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry
+import org.gradle.nativeplatform.toolchain.VisualCpp
 import org.gradle.platform.base.BinaryContainer
+import org.gradle.platform.base.BinarySpec
 import org.gradle.platform.base.ComponentSpecContainer
-import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.platform.base.PlatformContainer
-import org.gradle.language.cpp.tasks.CppCompile
-
-@Managed
-interface BuildConfig {
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setArchitecture(String arch)
-
-    String getArchitecture()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setIsArm(boolean isArm)
-
-    boolean getIsArm()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setToolChainPath(String path)
-
-    String getToolChainPath()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setOperatingSystem(String os)
-
-    String getOperatingSystem()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setToolChainPrefix(String prefix)
-
-    String getToolChainPrefix()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setCompilerArgs(List<String> args)
-
-    List<String> getCompilerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setDebugCompilerArgs(List<String> args)
-
-    List<String> getDebugCompilerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setDebugLinkerArgs(List<String> args)
-
-    List<String> getDebugLinkerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setReleaseCompilerArgs(List<String> args)
-
-    List<String> getReleaseCompilerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setReleaseLinkerArgs(List<String> args)
-
-    List<String> getReleaseLinkerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setLinkerArgs(List<String> args)
-
-    List<String> getLinkerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setCrossCompile(boolean cc)
-
-    boolean getCrossCompile()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setCompilerFamily(String family)
-
-    String getCompilerFamily()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setExclude(List<String> toExclude)
-
-    List<String> getExclude()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setStaticDeps(List<String> staticDeps)
-
-    List<String> getStaticDeps()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setSharedDeps(List<String> sharedDeps)
-
-    List<String> getSharedDeps()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setSkipTests(boolean skip)
-
-    boolean getSkipTests()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setDefFile(String defFile)
-
-    String getDefFile()
-}
 
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
-class WPILibDependencySet implements NativeDependencySet {
-    private String m_rootLocation
-    private BuildConfig m_buildConfig
-    private Project m_project
-    private String m_libraryName
-    private boolean m_sharedDep
-
-    public WPILibDependencySet(String rootLocation, BuildConfig config, String libraryName, Project project, boolean sharedDep) {
-      m_rootLocation = rootLocation
-      m_buildConfig = config
-      m_libraryName = libraryName
-      m_project = project
-      m_sharedDep = sharedDep
-    }
-
-    public FileCollection getIncludeRoots() {
-        return m_project.files("${m_rootLocation}/headers")
-    }
-
-    private FileCollection getFiles() {
-      def classifier = edu.wpi.first.nativeutils.NativeUtils.getClassifier(m_buildConfig)
-      def platformPath = edu.wpi.first.nativeutils.NativeUtils.getPlatformPath(m_buildConfig)
-      def dirPath = 'static'
-      if (m_sharedDep) {
-          dirPath = 'shared'
-      }
-
-
-      def extension
-      if (m_buildConfig.operatingSystem == 'windows') {
-        if (m_sharedDep) {
-            extension = '.dll'
-        } else {
-            extension = '.lib'
-        }
-      } else {
-        if (m_sharedDep) {
-            extension = '.so'
-        } else {
-            extension = '.a'
-        }
-      }
-      
-      def prefix = m_buildConfig.operatingSystem == 'windows' ? '' : 'lib'
-      return m_project.files("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/${prefix}${m_libraryName}${extension}")
-    }
-
-    public FileCollection getLinkFiles() {
-        return getFiles()
-    }
-
-    public FileCollection getRuntimeFiles() {
-        return getFiles()
-    }
-}
-
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
-    private static final ToolSearchPath toolSearchPath;
-
-    static {
-        toolSearchPath = new ToolSearchPath(OperatingSystem.current())
-    }
+    private static final ToolSearchPath toolSearchPath = new ToolSearchPath(OperatingSystem.current())
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('buildConfigs')
@@ -271,6 +116,8 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createJniCheckTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
+        // Only create JNI check tasks if not the gmock project, and if getJniSymbols is extension
+        // defined in the project
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
@@ -281,8 +128,7 @@ class BuildConfigRules extends RuleSource {
         configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
-                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                    && binary.buildType.name == 'release' 
+                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem
                     && binary.targetPlatform.operatingSystem.name != 'windows'
                     && binary instanceof SharedLibraryBinarySpec) {
                     def input = binary.buildTask.name
@@ -312,6 +158,7 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        // Only strip binaries if not a gmock project, if not windows, and if release
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
@@ -349,6 +196,7 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createDependencies(ModelMap<Task> tasks, BinaryContainer binaries,
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
+        // Only create dependencies if not gmock project
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }                   
@@ -442,6 +290,7 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
+        // Only create zip tasks if not gmock project
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
