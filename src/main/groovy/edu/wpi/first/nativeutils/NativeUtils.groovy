@@ -8,8 +8,11 @@ import org.gradle.nativeplatform.NativeBinarySpec
  * Created by 333fr on 3/1/2017.
  */
 public class NativeUtils implements Plugin<Project> {
-    public static String getToolChainPath(BuildConfig config, Project project) {
-        
+    private static final HashMap<BuildConfig, String> toolChainPathCache = new HashMap<>()
+    public static String getToolChainPath(BuildConfig config, Project project) { 
+        if (toolChainPathCache.containsKey(config)) {
+            return toolChainPathCache.get(config)
+        }
         for (item in project.properties) {
             def key = item.key
             def value = item.value
@@ -17,11 +20,13 @@ public class NativeUtils implements Plugin<Project> {
                 String[] configSplit = key.split("-", 2);
                 if (value != null && configSplit.length == 2 && configSplit[0] != "") {
                     if (configSplit[0] == config.architecture) {
+                        toolChainPathCache.put(config, value)
                         return value
                     }
                 }
             }
         }
+        toolChainPathCache.put(config, config.toolChainPath)
         return config.toolChainPath
     }
 
