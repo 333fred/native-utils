@@ -1,8 +1,10 @@
 package edu.wpi.first.nativeutils
 
+import org.gradle.internal.os.OperatingSystem
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.nativeplatform.NativeBinarySpec
+import org.gradle.nativeplatform.Tool
 
 /**
  * Created by 333fr on 3/1/2017.
@@ -69,6 +71,14 @@ public class NativeUtils implements Plugin<Project> {
      */
     public static String getClassifier(NativeBinarySpec binary) {
         return binary.targetPlatform.operatingSystem + binary.targetPlatform.architecture
+    }
+
+    public static String setPlatformSpecificIncludeFlag(String loc, Tool cppCompiler) {
+        if (OperatingSystem.current().isWindows()) {
+            cppCompiler.args "/I$loc"
+        } else {
+            cppCompiler.args '-I', loc
+        }
     }
     
     @Override
