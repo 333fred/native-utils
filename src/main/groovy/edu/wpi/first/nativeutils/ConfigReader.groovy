@@ -3,8 +3,11 @@ package edu.wpi.first.nativeutils
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.api.Task
 import org.gradle.api.tasks.bundling.Zip
+import org.gradle.api.tasks.Copy
+import org.gradle.api.Project
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.model.*
+import org.gradle.api.file.FileCollection
 import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.Tool
 import org.gradle.platform.base.BinarySpec
@@ -19,10 +22,12 @@ import org.gradle.nativeplatform.toolchain.VisualCpp
 import org.gradle.nativeplatform.toolchain.internal.tools.ToolSearchPath
 import org.gradle.nativeplatform.toolchain.internal.ToolType
 import org.gradle.api.GradleException
+import org.gradle.nativeplatform.NativeDependencySet
 import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.platform.base.PlatformContainer
+import org.gradle.language.cpp.tasks.CppCompile
 
 @Managed
 interface BuildConfig {
@@ -113,6 +118,62 @@ interface BuildConfig {
 }
 
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
+
+class WPILibDependencySet implements NativeDependencySet {
+    private String m_rootLocation
+    private BuildConfig m_buildConfig
+    private Project m_project
+    private String m_libraryName
+    private boolean m_sharedDep
+
+    public WPILibDependencySet(String rootLocation, BuildConfig config, String libraryName, Project project, boolean sharedDep) {
+      m_rootLocation = rootLocation
+      m_buildConfig = config
+      m_libraryName = libraryName
+      m_project = project
+      m_sharedDep = sharedDep
+    }
+
+    public FileCollection getIncludeRoots() {
+        return m_project.files("${m_rootLocation}/headers")
+    }
+
+    private FileCollection getFiles() {
+      def classifier = edu.wpi.first.nativeutils.NativeUtils.getClassifier(m_buildConfig)
+      def platformPath = edu.wpi.first.nativeutils.NativeUtils.getPlatformPath(m_buildConfig)
+      def dirPath = 'static'
+      if (m_sharedDep) {
+          dirPath = 'shared'
+      }
+
+
+      def extension
+      if (m_buildConfig.operatingSystem == 'windows') {
+        if (m_sharedDep) {
+            extension = '.dll'
+        } else {
+            extension = '.lib'
+        }
+      } else {
+        if (m_sharedDep) {
+            extension = '.so'
+        } else {
+            extension = '.a'
+        }
+      }
+      
+      def prefix = m_buildConfig.operatingSystem == 'windows' ? '' : 'lib'
+      return m_project.files("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/${prefix}${m_libraryName}${extension}")
+    }
+
+    public FileCollection getLinkFiles() {
+        return getFiles()
+    }
+
+    public FileCollection getRuntimeFiles() {
+        return getFiles()
+    }
+}
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
@@ -273,6 +334,99 @@ class BuildConfigRules extends RuleSource {
                             "${binTools('strip', projectLayout, config)} -g ${library}".execute()
                             "${binTools('objcopy', projectLayout, config)} --add-gnu-debuglink=${debugLibrary} ${library}".execute()
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
+    void createDependencies(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+                        ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
+            return
+        }                   
+        def rootProject = projectLayout.projectIdentifier.rootProject
+        def currentProject = projectLayout.projectIdentifier
+
+        currentProject.configurations.create('nativeDeps')
+
+        def createdHeaders = []
+
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+            currentProject.dependencies {
+                config.sharedDeps.each { dep ->
+                    if (!createdHeaders.contains(dep)) {
+                        createdHeaders.add(dep)
+                        nativeDeps "${dep}-cpp:+:headers@zip"
+                    }
+                    nativeDeps "${dep}-cpp:+:${NativeUtils.getClassifier(config)}@zip"
+                }
+                config.staticDeps.each { dep ->
+                    if (!createdHeaders.contains(dep)) {
+                        createdHeaders.add(dep)
+                        nativeDeps "${dep}-cpp:+:headers@zip"
+                    }
+                    nativeDeps "${dep}-cpp:+:${NativeUtils.getClassifier(config)}@zip"
+                }
+            }
+        }
+
+        def depLocation = "${rootProject.buildDir}/dependencies"
+
+        currentProject.configurations.nativeDeps.files.each { file->
+            def depName = file.name.substring(0, file.name.indexOf('-'))
+            def fileWithoutZip = file.name.take(file.name.lastIndexOf('.') + 1)
+            if (fileWithoutZip.endsWith('headers.')) {
+                def headerTaskName = "download${depName}Headers"
+                def headerTask = rootProject.tasks.findByPath(headerTaskName)
+                if (headerTask == null) {
+                    headerTask = rootProject.tasks.create(headerTaskName , Copy) {
+                        description = "Downloads and unzips the $depName header dependency."
+                        group = 'Dependencies'
+                        from rootProject.zipTree(file)
+                        into "$depLocation/${depName.toLowerCase()}/headers"
+                    }
+                    binaries.findAll { isNativeProject(it) }.each { binary ->
+                        binary.buildTask.dependsOn headerTask
+                    }
+                }
+            } else {
+                // Non headers task
+                configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+                    def classifier = NativeUtils.getClassifier(config)
+                    def downloadTaskName = "download${depName}${classifier}"
+                    def downloadTask = rootProject.tasks.findByPath(downloadTaskName)
+                    if (downloadTask == null) {
+                        downloadTask = rootProject.tasks.create(downloadTaskName , Copy) {
+                            description = "Downloads and unzips the $depName $classifier dependency."
+                            group = 'Dependencies'
+                            from rootProject.zipTree(file)
+                            into "$depLocation/${depName.toLowerCase()}/${classifier}"
+                        }
+                        binaries.findAll { isNativeProject(it) }.each { binary ->
+                            if (binary.targetPlatform.architecture.name == config.architecture
+                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
+                                binary.buildTask.dependsOn downloadTask
+                            }
+                        }
+                    }
+                }
+            }            
+        }
+
+        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+            binaries.findAll { isNativeProject(it) }.each { binary ->
+                if (binary.targetPlatform.architecture.name == config.architecture
+                && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
+                    config.sharedDeps.each { dep ->
+                        def depName = dep.split(':', 2)[1]
+                        binary.lib(new WPILibDependencySet("$depLocation/${depName.toLowerCase()}", config, depName, currentProject, true))
+                    }
+                    config.staticDeps.each { dep ->
+                        def depName = dep.split(':', 2)[1]
+                        binary.lib(new WPILibDependencySet("$depLocation/${depName.toLowerCase()}", config, depName, currentProject, false))
                     }
                 }
             }
