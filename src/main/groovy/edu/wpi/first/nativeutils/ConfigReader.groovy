@@ -476,36 +476,38 @@ class BuildConfigRules extends RuleSource {
                         }
                     }
                 }
-                
-                def jniTaskName = taskName + 'jni'
 
-                tasks.create(jniTaskName, Jar) { task ->
-                    description = 'Creates jni jar of the libraries'
-                    destinationDir =  projectLayout.buildDir
-                    classifier = config.operatingSystem + config.architecture
-                    baseName = 'jni'
-                    duplicatesStrategy = 'exclude'
+                def buildTask = tasks.get('build')
+                def zipTask = tasks.get(taskName)
+                buildTask.dependsOn zipTask
 
-                    binaries.findAll { isNativeProject(it) }.each { binary ->
-                        if (binary.targetPlatform.architecture.name == config.architecture
-                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                            && binary.buildType.name == buildType.name) {
-                            if (binary instanceof SharedLibraryBinarySpec) {
-                                dependsOn binary.buildTask
-                                from (binary.sharedLibraryFile) {
-                                    into NativeUtils.getPlatformPath(config)
+                def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
+                if (jniSymbolFunc != null) {
+                    def jniTaskName = taskName + 'jni'
+
+                    tasks.create(jniTaskName, Jar) { task ->
+                        description = 'Creates jni jar of the libraries'
+                        destinationDir =  projectLayout.buildDir
+                        classifier = config.operatingSystem + config.architecture
+                        baseName = 'jni'
+                        duplicatesStrategy = 'exclude'
+
+                        binaries.findAll { isNativeProject(it) }.each { binary ->
+                            if (binary.targetPlatform.architecture.name == config.architecture
+                                && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                                && binary.buildType.name == buildType.name) {
+                                if (binary instanceof SharedLibraryBinarySpec) {
+                                    dependsOn binary.buildTask
+                                    from (binary.sharedLibraryFile) {
+                                        into NativeUtils.getPlatformPath(config)
+                                    }
                                 }
                             }
                         }
                     }
+                    def jniTask = tasks.get(jniTaskName)
+                    buildTask.dependsOn jniTask
                 }
-
-                def zipTask = tasks.get(taskName)
-                def jniTask = tasks.get(jniTaskName)
-                def buildTask = tasks.get('build')
-
-                buildTask.dependsOn zipTask
-                buildTask.dependsOn jniTask
             }
         }
         
