@@ -347,7 +347,7 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createDependencies(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+    void createDependencies(ModelMap<Task> tasks, BinaryContainer binaries,
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
@@ -445,6 +445,8 @@ class BuildConfigRules extends RuleSource {
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
+
+        def project = projectLayout.projectIdentifier
         buildTypes.each { buildType ->
             configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
                 def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
@@ -481,6 +483,24 @@ class BuildConfigRules extends RuleSource {
                 def zipTask = tasks.get(taskName)
                 buildTask.dependsOn zipTask
 
+                project.artifacts {
+                    zipTask
+                }
+
+                project.publishing.publications {
+                    it.each { publication->
+                        if (publication.name == 'cpp') {
+                            zipTask.outputs.files.each { file ->
+                                if (!publication.artifacts.contains(file))
+                                {
+                                    publication.artifact zipTask 
+                                }
+                            }
+                        }
+                    }
+                }
+
+
                 def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
                 if (jniSymbolFunc != null) {
                     def jniTaskName = taskName + 'jni'
@@ -507,6 +527,22 @@ class BuildConfigRules extends RuleSource {
                     }
                     def jniTask = tasks.get(jniTaskName)
                     buildTask.dependsOn jniTask
+                    project.artifacts {
+                        jniTask
+                    }
+
+                    project.publishing.publications {
+                        it.each { publication->
+                            if (publication.name == 'jni') {
+                                jniTask.outputs.files.each { file ->
+                                    if (!publication.artifacts.contains(file))
+                                    {
+                                        publication.artifact jniTask
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -516,7 +552,7 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createPlatforms(PlatformContainer platforms, ProjectLayout projectLayout, BuildConfigSpec configs) {
+    void createPlatforms(PlatformContainer platforms, ProjectLayout projectLayout, BuildConfigSpec configs) { 
         if (configs == null) {
             return
         }
