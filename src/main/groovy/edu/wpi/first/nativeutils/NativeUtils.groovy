@@ -9,6 +9,10 @@ import org.gradle.nativeplatform.NativeBinarySpec
  */
 public class NativeUtils implements Plugin<Project> {
     private static final HashMap<BuildConfig, String> toolChainPathCache = new HashMap<>()
+
+    /**
+     * Gets the toolChainPath for the specific build configuration
+     */
     public static String getToolChainPath(BuildConfig config, Project project) { 
         if (toolChainPathCache.containsKey(config)) {
             return toolChainPathCache.get(config)
@@ -32,22 +36,37 @@ public class NativeUtils implements Plugin<Project> {
 
     static final ArrayList<BuildConfig> buildConfigs = new ArrayList<>();
 
+    /**
+     * Gets the toolChainPath for the specific build configuration
+     */
     public static ArrayList<BuildConfig> getBuildConfigs() {
         return buildConfigs
     }
 
+    /**
+     * Gets the extraction platform path for the specific build configuration
+     */
     public static String getPlatformPath(BuildConfig config) {
         return config.operatingSystem + '/' + config.architecture
     }
 
+    /**
+     * Gets the artifact classifier for a specifc build configuration
+     */
     public static String getClassifier(BuildConfig config) {
         return config.operatingSystem + config.architecture
     }
 
+    /**
+     * Gets the extraction platform path for a specific binary
+     */
     public static String getPlatformPath(NativeBinarySpec binary) {
         return binary.targetPlatform.operatingSystem + '/' + binary.targetPlatform.architecture
     }
 
+    /**
+     * Gets the artifact classifier for a specific binary
+     */
     public static String getClassifier(NativeBinarySpec binary) {
         return binary.targetPlatform.operatingSystem + binary.targetPlatform.architecture
     }

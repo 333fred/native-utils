@@ -115,6 +115,11 @@ interface BuildConfig {
     void setSkipTests(boolean skip)
 
     boolean getSkipTests()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setDefFile(String defFile)
+
+    String getDefFile()
 }
 
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
@@ -574,6 +579,31 @@ class BuildConfigRules extends RuleSource {
             if (config != null) {
                 addArgsToTool(binary.cppCompiler, config.releaseCompilerArgs)
                 addArgsToTool(binary.linker, config.releaseLinkerArgs)
+            }
+        }
+    }
+
+    @Validate
+    void setDefFileToolChainArgs(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (configs == null) {
+            return
+        }
+
+        def enabledConfigs = configs.findAll {
+            isConfigEnabled(it, projectLayout) && (it.defFile != null)
+        }
+        if (enabledConfigs == null || enabledConfigs.empty) {
+            return
+        }
+
+        binaries.findAll { 
+            isNativeProject(it) }.each { binary ->
+            def config = enabledConfigs.find {
+                it.operatingSystem == 'windows' &&
+                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+            }
+            if (config != null) {
+                addArgsToTool(binary.linker, "/DEF:${config.defFile}")
             }
         }
     }
