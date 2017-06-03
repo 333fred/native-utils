@@ -205,6 +205,9 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createJniCheckTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
+            return
+        }
         def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
         if (jniSymbolFunc == null) {
             return;
@@ -243,6 +246,9 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
+            return
+        }
         configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
@@ -277,6 +283,9 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
+            return
+        }
         buildTypes.each { buildType ->
             configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
                 def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
