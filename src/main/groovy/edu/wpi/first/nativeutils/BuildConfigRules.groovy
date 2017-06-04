@@ -93,18 +93,26 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void setSkipGoogleTest(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
-        def skipAllTests = projectLayout.projectIdentifier.hasProperty('skipAllTests')
         def skipConfigs = configs.findAll { it.skipTests }.collect { it.architecture }
         if (skipConfigs != null && !skipConfigs.empty) {
             binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
-                if (skipConfigs.contains(spec.targetPlatform.architecture.name) || skipAllTests) {
+                if (skipConfigs.contains(spec.targetPlatform.architecture.name)) {
                     spec.buildable = false
                 }
             }
         }
     }
 
-    
+    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
+    @Mutate
+    void setSkipAllGoogleTest(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        def skipAllTests = projectLayout.projectIdentifier.hasProperty('skipAllTests')
+        if (skipAllTests) {
+            binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
+                    spec.buildable = false
+            }
+        }
+    }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
@@ -378,6 +386,10 @@ class BuildConfigRules extends RuleSource {
 
     @Validate
     void setDefFileToolChainArgs(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
+            return
+        }
+        
         if (configs == null) {
             return
         }
@@ -396,7 +408,7 @@ class BuildConfigRules extends RuleSource {
                         BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
             }
             if (config != null) {
-                BuildConfigRulesBase.addArgsToTool(binary.linker, "/DEF:${config.defFile}")
+                BuildConfigRulesBase.addArgsToTool(binary.linker, [ "/DEF:${config.defFile}".toString() ])
             }
         }
     }
