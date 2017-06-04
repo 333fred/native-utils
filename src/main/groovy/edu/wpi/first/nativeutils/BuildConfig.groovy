@@ -1,5 +1,7 @@
 package edu.wpi.first.nativeutils
 
+import org.gradle.model.*
+
 @Managed
 interface BuildConfig {
     @SuppressWarnings("GroovyUnusedDeclaration")
