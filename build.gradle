@@ -14,7 +14,12 @@ gradlePlugin {
             id = 'edu.wpi.first.native-utils'
             implementationClass = 'edu.wpi.first.nativeutils.NativeUtils'
         }
+        JNIUtils {
+            id = 'edu.wpi.first.jni-utils'
+            implementationClass = 'edu.wpi.first.nativeutils.JNIUtils'
+        }
     }
+    
 }
 
 version = '0.1-SNAPSHOT'

@@ -30,12 +30,7 @@ import org.gradle.platform.base.PlatformContainer
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
 @SuppressWarnings("GroovyUnusedDeclaration")
-class BuildConfigRules extends RuleSource {
-    private static final ToolSearchPath toolSearchPath = new ToolSearchPath(OperatingSystem.current())
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('buildConfigs')
-    void createBuildConfigs(BuildConfigSpec configs) {}
+class BuildConfigRules extends BuildConfigRulesBase {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
@@ -103,13 +98,6 @@ class BuildConfigRules extends RuleSource {
                 }
             }
         }
-    }
-
-    private String binTools(String tool, ProjectLayout projectLayout, BuildConfig config) {
-        def toolChainPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-        def compilerPrefix = config.toolChainPrefix
-        if (toolChainPath != null) return "${toolChainPath}/${compilerPrefix}${tool}"
-        return "${compilerPrefix}${tool}"
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
