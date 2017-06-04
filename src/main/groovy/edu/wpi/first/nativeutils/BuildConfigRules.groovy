@@ -30,7 +30,11 @@ import org.gradle.platform.base.PlatformContainer
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
 @SuppressWarnings("GroovyUnusedDeclaration")
-class BuildConfigRules extends BuildConfigRulesBase {
+class BuildConfigRules extends RuleSource {
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    @Model('buildConfigs')
+    void createBuildConfigs(BuildConfigSpec configs) {}
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
@@ -55,7 +59,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
     @Validate
     void setTargetPlatforms(ComponentSpecContainer components, ProjectLayout projectLayout, BuildConfigSpec configs) {
         components.each { component ->
-            configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
                 if (config.exclude == null || !config.exclude.contains(component.name)) {
                     component.targetPlatform config.architecture
                 }
@@ -100,48 +104,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
         }
     }
 
-    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate
-    void createJniCheckTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
-                        ProjectLayout projectLayout, BuildConfigSpec configs) {
-        // Only create JNI check tasks if not the gmock project, and if getJniSymbols is extension
-        // defined in the project
-        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
-            return
-        }
-        def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
-        if (jniSymbolFunc == null) {
-            return;
-        }
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
-            binaries.findAll { isNativeProject(it) }.each { binary ->
-                if (binary.targetPlatform.architecture.name == config.architecture
-                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem
-                    && binary.targetPlatform.operatingSystem.name != 'windows'
-                    && binary instanceof SharedLibraryBinarySpec) {
-                    def input = binary.buildTask.name
-                    def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
-                    def task = tasks.get(linkTaskName)
-                    task.doLast {
-                        def library = task.outputFile.absolutePath
-                        def nmOutput = "${binTools('nm', config)} ${library}".execute().text
-
-                        def nmSymbols = nmOutput.toString().replace('\r', '')
-
-                        def symbolList = jniSymbolFunc()
-
-                        symbolList.each {
-                            //Add \n so we can check for the exact symbol
-                            def found = nmSymbols.contains(it + '\n')
-                            if (!found) {
-                                throw new GradleException("Found a definition that does not have a matching symbol ${it}")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
@@ -150,8 +113,9 @@ class BuildConfigRules extends BuildConfigRulesBase {
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
-            binaries.findAll { isNativeProject(it) }.each { binary ->
+        def project = projectLayout.projectIdentifier
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+            binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                     && binary.buildType.name == 'release' 
@@ -163,16 +127,16 @@ class BuildConfigRules extends BuildConfigRulesBase {
                     if (binary.targetPlatform.operatingSystem.name == 'osx') {
                         def library = task.outputFile.absolutePath
                         task.doLast {
-                            "dsymutil ${library}".execute()
-                            "strip -S ${library}".execute()
+                            project.exec { commandLine "dsymutil", library }
+                            project.exec { commandLine "strip", '-S', library }
                         }
                     } else {
                         def library = task.outputFile.absolutePath
                         def debugLibrary = task.outputFile.absolutePath + ".debug"
                         task.doLast {
-                            "${binTools('objcopy', projectLayout, config)} --only-keep-debug ${library} ${debugLibrary}".execute()
-                            "${binTools('strip', projectLayout, config)} -g ${library}".execute()
-                            "${binTools('objcopy', projectLayout, config)} --add-gnu-debuglink=${debugLibrary} ${library}".execute()
+                            project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), '--only-keep-debug', library, debugLibrary }
+                            project.exec { commandLine BuildConfigRulesBase.binTools('strip', projectLayout, config), '-g', library }
+                            project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), "--add-gnu-debuglink=$debugLibrary", library }
                         }
                     }
                 }
@@ -195,7 +159,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
 
         def createdHeaders = []
 
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
             currentProject.dependencies {
                 config.sharedDeps.each { dep ->
                     if (!createdHeaders.contains(dep)) {
@@ -229,13 +193,13 @@ class BuildConfigRules extends BuildConfigRulesBase {
                         from rootProject.zipTree(file)
                         into "$depLocation/${depName.toLowerCase()}/headers"
                     }
-                    binaries.findAll { isNativeProject(it) }.each { binary ->
+                    binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                         binary.buildTask.dependsOn headerTask
                     }
                 }
             } else {
                 // Non headers task
-                configs.findAll { isConfigEnabled(it, projectLayout) && fileWithoutZip.endsWith("${NativeUtils.getClassifier(it)}.")}.each { config ->
+                configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && fileWithoutZip.endsWith("${NativeUtils.getClassifier(it)}.")}.each { config ->
                     def classifier = NativeUtils.getClassifier(config)
                     def downloadTaskName = "download${depName}${classifier}"
                     def downloadTask = rootProject.tasks.findByPath(downloadTaskName)
@@ -246,7 +210,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
                             from rootProject.zipTree(file)
                             into "$depLocation/${depName.toLowerCase()}/${classifier}"
                         }
-                        binaries.findAll { isNativeProject(it) }.each { binary ->
+                        binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                             if (binary.targetPlatform.architecture.name == config.architecture
                             && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
                                 binary.buildTask.dependsOn downloadTask
@@ -257,8 +221,8 @@ class BuildConfigRules extends BuildConfigRulesBase {
             }            
         }
 
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
-            binaries.findAll { isNativeProject(it) }.each { binary ->
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+            binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                 && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
                     config.sharedDeps.each { dep ->
@@ -285,7 +249,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
 
         def project = projectLayout.projectIdentifier
         buildTypes.each { buildType ->
-            configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
                 def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
                 tasks.create(taskName, Zip) { task ->
                     description = 'Creates platform zip of the libraries'
@@ -294,7 +258,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
                     baseName = 'zip'
                     duplicatesStrategy = 'exclude'
 
-                    binaries.findAll { isNativeProject(it) }.each { binary ->
+                    binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                         if (binary.targetPlatform.architecture.name == config.architecture
                             && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
                             && binary.buildType.name == buildType.name) {
@@ -336,54 +300,8 @@ class BuildConfigRules extends BuildConfigRulesBase {
                         }
                     }
                 }
-
-
-                def jniSymbolFunc = projectLayout.projectIdentifier.findProperty('getJniSymbols')
-                if (jniSymbolFunc != null) {
-                    def jniTaskName = taskName + 'jni'
-
-                    tasks.create(jniTaskName, Jar) { task ->
-                        description = 'Creates jni jar of the libraries'
-                        destinationDir =  projectLayout.buildDir
-                        classifier = config.operatingSystem + config.architecture
-                        baseName = 'jni'
-                        duplicatesStrategy = 'exclude'
-
-                        binaries.findAll { isNativeProject(it) }.each { binary ->
-                            if (binary.targetPlatform.architecture.name == config.architecture
-                                && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                                && binary.buildType.name == buildType.name) {
-                                if (binary instanceof SharedLibraryBinarySpec) {
-                                    dependsOn binary.buildTask
-                                    from (binary.sharedLibraryFile) {
-                                        into NativeUtils.getPlatformPath(config)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    def jniTask = tasks.get(jniTaskName)
-                    buildTask.dependsOn jniTask
-                    project.artifacts {
-                        jniTask
-                    }
-
-                    project.publishing.publications {
-                        it.each { publication->
-                            if (publication.name == 'jni') {
-                                jniTask.outputs.files.each { file ->
-                                    if (!publication.artifacts.contains(file))
-                                    {
-                                        publication.artifact jniTask
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
-        
     }
 
 
@@ -394,7 +312,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
             return
         }
 
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each { config ->
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
             if (config.architecture != null) {
                 platforms.create(config.architecture) { platform ->
                     platform.architecture config.architecture
@@ -413,21 +331,21 @@ class BuildConfigRules extends BuildConfigRulesBase {
         }
 
         def enabledConfigs = configs.findAll {
-            isConfigEnabled(it, projectLayout) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
+            BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
         }
 
         binaries.findAll { 
-            isNativeProject(it) && it.buildType.name == 'debug' }.each { binary ->
+            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name == 'debug' }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
-                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+                        BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
             }
             if (config != null) {
-                addArgsToTool(binary.cppCompiler, config.debugCompilerArgs)
-                addArgsToTool(binary.linker, config.debugLinkerArgs)
+                BuildConfigRulesBase.addArgsToTool(binary.cppCompiler, config.debugCompilerArgs)
+                BuildConfigRulesBase.addArgsToTool(binary.linker, config.debugLinkerArgs)
             }
         }
     }
@@ -439,21 +357,21 @@ class BuildConfigRules extends BuildConfigRulesBase {
         }
 
         def enabledConfigs = configs.findAll {
-            isConfigEnabled(it, projectLayout) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
+            BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
         }
 
         binaries.findAll { 
-            isNativeProject(it) && it.buildType.name == 'release' }.each { binary ->
+            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name == 'release' }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
-                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+                        BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
             }
             if (config != null) {
-                addArgsToTool(binary.cppCompiler, config.releaseCompilerArgs)
-                addArgsToTool(binary.linker, config.releaseLinkerArgs)
+                BuildConfigRulesBase.addArgsToTool(binary.cppCompiler, config.releaseCompilerArgs)
+                BuildConfigRulesBase.addArgsToTool(binary.linker, config.releaseLinkerArgs)
             }
         }
     }
@@ -465,27 +383,27 @@ class BuildConfigRules extends BuildConfigRulesBase {
         }
 
         def enabledConfigs = configs.findAll {
-            isConfigEnabled(it, projectLayout) && (it.defFile != null)
+            BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && (it.defFile != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
         }
 
         binaries.findAll { 
-            isNativeProject(it) }.each { binary ->
+            BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
             def config = enabledConfigs.find {
                 it.operatingSystem == 'windows' &&
-                        getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
+                        BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
             }
             if (config != null) {
-                addArgsToTool(binary.linker, "/DEF:${config.defFile}")
+                BuildConfigRulesBase.addArgsToTool(binary.linker, "/DEF:${config.defFile}")
             }
         }
     }
 
     @Validate
     void storeAllBuildConfigs(BuildConfigSpec configs, ProjectLayout projectLayout) {
-        configs.findAll { isConfigEnabled(it, projectLayout) }.each {
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each {
             NativeUtils.buildConfigs.add(it)
         }
     }
@@ -497,7 +415,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
             return
         }
 
-        def vcppConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'VisualCpp' }
+        def vcppConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'VisualCpp' }
         if (vcppConfigs != null && !vcppConfigs.empty) {
             toolChains.create('visualCpp', VisualCpp.class) { t ->
                 t.eachPlatform { toolChain ->
@@ -530,7 +448,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
             }
         }
 
-        def gccConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Gcc' }
+        def gccConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Gcc' }
         if (gccConfigs != null && !gccConfigs.empty) {
             toolChains.create('gcc', Gcc.class) {
                 gccConfigs.each { config ->
@@ -562,7 +480,7 @@ class BuildConfigRules extends BuildConfigRulesBase {
             }
         }
 
-        def clangConfigs = configs.findAll { isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Clang' }
+        def clangConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Clang' }
         if (clangConfigs != null && !clangConfigs.empty) {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->
@@ -593,80 +511,5 @@ class BuildConfigRules extends BuildConfigRulesBase {
                 }
             }
         }
-    }
-
-    private void addArgsToTool(Tool tool, args) {
-        if (args != null) {
-            tool.args.addAll((List<String>)args)
-        }
-    }
-
-    private Class getCompilerFamily(String family) {
-        switch (family) {
-            case 'VisualCpp':
-                return VisualCpp
-            case 'Gcc':
-                return Gcc
-            case 'Clang':
-                return Clang
-        }
-    }
-
-    private boolean isNativeProject(BinarySpec binary) {
-        return binary instanceof NativeBinarySpec
-    }
-
-    /**
-     * If a config is crosscompiling, only enable for athena. Otherwise, only enable if the current os is the config os,
-     * or specific cross compiler is specified
-     */
-    private boolean isConfigEnabled(BuildConfig config, ProjectLayout projectLayout) {
-        if (config.crossCompile) {
-            return doesToolChainExist(config, projectLayout)
-        }
-
-        def currentOs;
-        def isArm;
-
-        if (OperatingSystem.current().isWindows()) {
-            currentOs = 'windows'
-            isArm = false
-        } else if (OperatingSystem.current().isMacOsX()) {
-            currentOs = 'osx'
-            isArm = false
-        } else if (OperatingSystem.current().isLinux()) {
-            currentOs = 'linux'
-            def arch = System.getProperty("os.arch")
-            if (arch == 'amd64' || arch == 'i386') {
-                isArm = false
-            } else {
-                isArm = true
-            }
-        } else if (OperatingSystem.current().isUnix()) {
-            currentOs = 'unix'
-            def arch = System.getProperty("os.arch")
-            if (arch == 'amd64' || arch == 'i386') {
-                isArm = false
-            } else {
-                isArm = true
-            }
-        }
-
-
-
-        return currentOs == config.operatingSystem.toLowerCase() &&
-               isArm == config.isArm
-    }
-
-    private boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {
-        if (!config.crossCompile) {
-            return true;
-        }
-
-        def path = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-
-        def toolPath = path == null ? "" : path
-
-        return toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable();
     }
 }
