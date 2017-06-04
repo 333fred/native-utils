@@ -93,4 +93,15 @@ interface BuildConfig {
     void setDefFile(String defFile)
 
     String getDefFile()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setDebugStripBinaries(boolean strip)
+
+    boolean getDebugStripBinaries()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    void setReleaseStripBinaries(boolean strip)
+
+    boolean getReleaseStripBinaries()
+
 }

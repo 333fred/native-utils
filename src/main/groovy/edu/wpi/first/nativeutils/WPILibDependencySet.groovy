@@ -7,7 +7,7 @@ import org.gradle.nativeplatform.NativeDependencySet
 /**
  *
  */
-class WPILibDependencySet implements NativeDependencySet {
+public class WPILibDependencySet implements NativeDependencySet {
     private String m_rootLocation
     private BuildConfig m_buildConfig
     private Project m_project

@@ -186,13 +186,15 @@ class BuildConfigRulesJNI extends RuleSource {
                     jniTask
                 }
 
-                project.publishing.publications {
-                    it.each { publication->
-                        if (publication.name == 'jni') {
-                            jniTask.outputs.files.each { file ->
-                                if (!publication.artifacts.contains(file))
-                                {
-                                    publication.artifact jniTask
+                if (project.hasProperty('publishing')) {
+                    project.publishing.publications {
+                        it.each { publication->
+                            if (publication.name == 'jni') {
+                                jniTask.outputs.files.each { file ->
+                                    if (!publication.artifacts.contains(file))
+                                    {
+                                        publication.artifact jniTask
+                                    }
                                 }
                             }
                         }

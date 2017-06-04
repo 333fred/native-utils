@@ -36,6 +36,10 @@ class BuildConfigRules extends RuleSource {
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
 
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    @Model('publishingConfig')
+    void createPublishingConfig(PublishingConfig config) {}
+
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
     void validateCompilerFamilyExists(BuildConfigSpec configs) {
@@ -117,16 +121,12 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
-        // Only strip binaries if not a gmock project, if not windows, and if release
-        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
-            return
-        }
         def project = projectLayout.projectIdentifier
         configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                    && binary.buildType.name == 'release' 
+                    && ((config.debugStripBinaries && binary.buildType.name == 'debug') ||  (config.releaseStripBinaries && binary.buildType.name == 'release'))
                     && binary.targetPlatform.operatingSystem.name != 'windows'
                     && binary instanceof SharedLibraryBinarySpec) {
                     def input = binary.buildTask.name
@@ -296,13 +296,15 @@ class BuildConfigRules extends RuleSource {
                     zipTask
                 }
 
-                project.publishing.publications {
-                    it.each { publication->
-                        if (publication.name == 'cpp') {
-                            zipTask.outputs.files.each { file ->
-                                if (!publication.artifacts.contains(file))
-                                {
-                                    publication.artifact zipTask 
+                if (project.hasProperty('publishing')) {
+                    project.publishing.publications {
+                        it.each { publication->
+                            if (publication.name == 'cpp') {
+                                zipTask.outputs.files.each { file ->
+                                    if (!publication.artifacts.contains(file))
+                                    {
+                                        publication.artifact zipTask 
+                                    }
                                 }
                             }
                         }
@@ -389,7 +391,7 @@ class BuildConfigRules extends RuleSource {
         if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
             return
         }
-        
+
         if (configs == null) {
             return
         }
