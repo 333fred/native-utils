@@ -81,11 +81,6 @@ interface BuildConfig extends Named {
     boolean getSkipTests()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
-    void setDefFile(String defFile)
-
-    String getDefFile()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
     void setDebugStripBinaries(boolean strip)
 
     boolean getDebugStripBinaries()
