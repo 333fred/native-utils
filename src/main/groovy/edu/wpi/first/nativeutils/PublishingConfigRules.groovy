@@ -28,8 +28,6 @@ import org.gradle.platform.base.BinarySpec
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
 
-interface PublishingConfigSpec extends ModelMap<PublishingConfig> {}
-
 @SuppressWarnings("GroovyUnusedDeclaration")
 class PublishingConfigRules extends RuleSource {
 

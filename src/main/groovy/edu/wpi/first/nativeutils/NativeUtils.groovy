@@ -63,14 +63,14 @@ public class NativeUtils implements Plugin<Project> {
      * Gets the extraction platform path for a specific binary
      */
     public static String getPlatformPath(NativeBinarySpec binary) {
-        return binary.targetPlatform.operatingSystem + '/' + binary.targetPlatform.architecture
+        return binary.targetPlatform.operatingSystem.name + '/' + binary.targetPlatform.architecture.name
     }
 
     /**
      * Gets the artifact classifier for a specific binary
      */
     public static String getClassifier(NativeBinarySpec binary) {
-        return binary.targetPlatform.operatingSystem + binary.targetPlatform.architecture
+        return binary.targetPlatform.operatingSystem.name + binary.targetPlatform.architecture.name
     }
 
     /**

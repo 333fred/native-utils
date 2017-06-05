@@ -29,6 +29,10 @@ import org.gradle.platform.base.PlatformContainer
 
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
+interface DependencyConfigSpec extends ModelMap<DependencyConfig> {}
+
+interface PublishingConfigSpec extends ModelMap<PublishingConfig> {}
+
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
 
@@ -40,6 +44,10 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('publishingConfigs')
     void createPublishingConfigs(PublishingConfigSpec configs) {}
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    @Model('dependencyConfigs')
+    void createDependencyConfigs(DependencyConfigSpec configs) {}
 
     
     @SuppressWarnings("GroovyUnusedDeclaration")

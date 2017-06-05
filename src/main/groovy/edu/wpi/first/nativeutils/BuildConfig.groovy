@@ -1,9 +1,10 @@
 package edu.wpi.first.nativeutils
 
 import org.gradle.model.*
+import org.gradle.api.Named
 
 @Managed
-interface BuildConfig {
+interface BuildConfig extends Named {
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setArchitecture(String arch)
 
