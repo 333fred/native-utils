@@ -47,6 +47,13 @@ class BuildConfigRulesBase  {
         return binary instanceof NativeBinarySpec
     }
 
+    static boolean isComponentEnabled(BuildConfig config, String componentName) {
+        if (config.exclude == null || config.exclude.size() == 0) {
+            return true
+        } 
+        return !config.exclude.contains(componentName)
+    }
+
     /**
      * If a config is crosscompiling, only enable for athena. Otherwise, only enable if the current os is the config os,
      * or specific cross compiler is specified

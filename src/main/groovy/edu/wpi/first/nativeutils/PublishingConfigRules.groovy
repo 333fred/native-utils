@@ -41,11 +41,11 @@ class PublishingConfigRules extends RuleSource {
                     }
                 }
             } else {
-                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it) }
+                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it.name) }
             }
             componentsToBuild.each { component ->
                 buildTypes.each { buildType ->
-                    configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+                    configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && BuildConfigRulesBase.isComponentEnabled(it, component.name) }.each { config ->
                         def base = 'zip' + publishConfig.name + component.name + buildType.name
                         def taskName = base + config.operatingSystem + config.architecture
                         tasks.create(taskName, Zip) { task ->
@@ -138,11 +138,11 @@ class PublishingConfigRules extends RuleSource {
                     }
                 }
             } else {
-                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it) }
+                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it.name) }
             }
             componentsToBuild.each { component ->
                 buildTypes.each { buildType ->
-                    configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+                    configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && BuildConfigRulesBase.isComponentEnabled(it, component.name) }.each { config ->
                         def base = 'jni' + publishConfig.name + component.name + buildType.name
                         def taskName = base + config.operatingSystem + config.architecture
                         tasks.create(taskName, Jar) { task ->
