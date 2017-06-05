@@ -1,30 +1,15 @@
 package edu.wpi.first.nativeutils
 
-import org.gradle.api.GradleException
-import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.bundling.Zip
-import org.gradle.api.tasks.Copy
-import org.gradle.internal.os.OperatingSystem
 import org.gradle.language.base.internal.ProjectLayout
-import org.gradle.language.cpp.tasks.CppCompile
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.model.*
 import org.gradle.nativeplatform.BuildTypeContainer
-import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.nativeplatform.SharedLibraryBinarySpec
 import org.gradle.nativeplatform.StaticLibraryBinarySpec
-import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
-import org.gradle.nativeplatform.Tool
-import org.gradle.nativeplatform.toolchain.Clang
-import org.gradle.nativeplatform.toolchain.Gcc
-import org.gradle.nativeplatform.toolchain.internal.tools.ToolSearchPath
-import org.gradle.nativeplatform.toolchain.internal.ToolType
-import org.gradle.nativeplatform.toolchain.NativeToolChainRegistry
-import org.gradle.nativeplatform.toolchain.VisualCpp
 import org.gradle.platform.base.BinaryContainer
-import org.gradle.platform.base.BinarySpec
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
 
