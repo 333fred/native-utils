@@ -31,10 +31,6 @@ import org.gradle.api.file.FileTree
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRulesJNI extends RuleSource {
 
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('jniConfig')
-    void createJniConfig(JNIConfig config) {}
-
     @Mutate
     void createJniTasks(ModelMap<Task> tasks, JNIConfig jniConfig, ProjectLayout projectLayout,
                         BinaryContainer binaries, BuildTypeContainer buildTypes, BuildConfigSpec configs) {
@@ -146,62 +142,6 @@ class BuildConfigRulesJNI extends RuleSource {
                     binary.buildTask.dependsOn jniHeaders
                 }
             }
-         }
-    }
-
-    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate
-    void createJniZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
-                        ProjectLayout projectLayout, BuildConfigSpec configs, JNIConfig jniConfig) {
-
-        def project = projectLayout.projectIdentifier
-        buildTypes.each { buildType ->
-            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
-                def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
-                def jniTaskName = taskName + 'jni'
-                tasks.create(jniTaskName, Jar) { task ->
-                    description = 'Creates jni jar of the libraries'
-                    destinationDir =  projectLayout.buildDir
-                    classifier = config.operatingSystem + config.architecture
-                    baseName = 'jni'
-                    duplicatesStrategy = 'exclude'
-
-                    binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                        if (binary.targetPlatform.architecture.name == config.architecture
-                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                            && binary.buildType.name == buildType.name) {
-                            if (binary instanceof SharedLibraryBinarySpec) {
-                                dependsOn binary.buildTask
-                                from (binary.sharedLibraryFile) {
-                                    into NativeUtils.getPlatformPath(config)
-                                }
-                            }
-                        }
-                    }
-                }
-                def buildTask = tasks.get('build')
-                def jniTask = tasks.get(jniTaskName)
-                buildTask.dependsOn jniTask
-                project.artifacts {
-                    jniTask
-                }
-
-                if (project.hasProperty('publishing')) {
-                    project.publishing.publications {
-                        it.each { publication->
-                            if (publication.name == 'jni') {
-                                jniTask.outputs.files.each { file ->
-                                    if (!publication.artifacts.contains(file))
-                                    {
-                                        publication.artifact jniTask
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
+         }        
     }
 }

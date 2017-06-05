@@ -36,9 +36,15 @@ class BuildConfigRules extends RuleSource {
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
 
+    
     @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('publishingConfig')
-    void createPublishingConfig(PublishingConfig config) {}
+    @Model('publishingConfigs')
+    void createPublishingConfigs(PublishingConfigSpec configs) {}
+
+    
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    @Model('jniConfig')
+    void createJniConfig(JNIConfig config) {}
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
@@ -145,168 +151,6 @@ class BuildConfigRules extends RuleSource {
                             project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), '--only-keep-debug', library, debugLibrary }
                             project.exec { commandLine BuildConfigRulesBase.binTools('strip', projectLayout, config), '-g', library }
                             project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), "--add-gnu-debuglink=$debugLibrary", library }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate
-    void createDependencies(ModelMap<Task> tasks, BinaryContainer binaries,
-                        ProjectLayout projectLayout, BuildConfigSpec configs) {
-        // Only create dependencies if not gmock project
-        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
-            return
-        }                   
-        def rootProject = projectLayout.projectIdentifier.rootProject
-        def currentProject = projectLayout.projectIdentifier
-
-        currentProject.configurations.create('nativeDeps')
-
-        def createdHeaders = []
-
-        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
-            currentProject.dependencies {
-                config.sharedDeps.each { dep ->
-                    if (!createdHeaders.contains(dep)) {
-                        createdHeaders.add(dep)
-                        nativeDeps "${dep}-cpp:+:headers@zip"
-                    }
-                    nativeDeps "${dep}-cpp:+:${NativeUtils.getClassifier(config)}@zip"
-                }
-                config.staticDeps.each { dep ->
-                    if (!createdHeaders.contains(dep)) {
-                        createdHeaders.add(dep)
-                        nativeDeps "${dep}-cpp:+:headers@zip"
-                    }
-                    nativeDeps "${dep}-cpp:+:${NativeUtils.getClassifier(config)}@zip"
-                }
-            }
-        }
-
-        def depLocation = "${rootProject.buildDir}/dependencies"
-
-        currentProject.configurations.nativeDeps.files.each { file->
-            def depName = file.name.substring(0, file.name.indexOf('-'))
-            def fileWithoutZip = file.name.take(file.name.lastIndexOf('.') + 1)
-            if (fileWithoutZip.endsWith('headers.')) {
-                def headerTaskName = "download${depName}Headers"
-                def headerTask = rootProject.tasks.findByPath(headerTaskName)
-                if (headerTask == null) {
-                    headerTask = rootProject.tasks.create(headerTaskName , Copy) {
-                        description = "Downloads and unzips the $depName header dependency."
-                        group = 'Dependencies'
-                        from rootProject.zipTree(file)
-                        into "$depLocation/${depName.toLowerCase()}/headers"
-                    }
-                    binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                        binary.buildTask.dependsOn headerTask
-                    }
-                }
-            } else {
-                // Non headers task
-                configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && fileWithoutZip.endsWith("${NativeUtils.getClassifier(it)}.")}.each { config ->
-                    def classifier = NativeUtils.getClassifier(config)
-                    def downloadTaskName = "download${depName}${classifier}"
-                    def downloadTask = rootProject.tasks.findByPath(downloadTaskName)
-                    if (downloadTask == null) {
-                        downloadTask = rootProject.tasks.create(downloadTaskName , Copy) {
-                            description = "Downloads and unzips the $depName $classifier dependency."
-                            group = 'Dependencies'
-                            from rootProject.zipTree(file)
-                            into "$depLocation/${depName.toLowerCase()}/${classifier}"
-                        }
-                        binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                            if (binary.targetPlatform.architecture.name == config.architecture
-                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
-                                binary.buildTask.dependsOn downloadTask
-                            }
-                        }
-                    }
-                }
-            }            
-        }
-
-        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
-            binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                if (binary.targetPlatform.architecture.name == config.architecture
-                && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
-                    config.sharedDeps.each { dep ->
-                        def depName = dep.split(':', 2)[1]
-                        binary.lib(new WPILibDependencySet("$depLocation/${depName.toLowerCase()}", config, depName, currentProject, true))
-                    }
-                    config.staticDeps.each { dep ->
-                        def depName = dep.split(':', 2)[1]
-                        binary.lib(new WPILibDependencySet("$depLocation/${depName.toLowerCase()}", config, depName, currentProject, false))
-                    }
-                }
-            }
-        }
-    }
-
-    @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate
-    void createZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
-                        ProjectLayout projectLayout, BuildConfigSpec configs) {
-        // Only create zip tasks if not gmock project
-        if (projectLayout.projectIdentifier.hasProperty('gmockProject')) {
-            return
-        }
-
-        def project = projectLayout.projectIdentifier
-        buildTypes.each { buildType ->
-            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
-                def taskName = 'zip' + config.operatingSystem + config.architecture + buildType.name
-                tasks.create(taskName, Zip) { task ->
-                    description = 'Creates platform zip of the libraries'
-                    destinationDir =  projectLayout.buildDir
-                    classifier = config.operatingSystem + config.architecture
-                    baseName = 'zip'
-                    duplicatesStrategy = 'exclude'
-
-                    binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                        if (binary.targetPlatform.architecture.name == config.architecture
-                            && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                            && binary.buildType.name == buildType.name) {
-                            if (binary instanceof SharedLibraryBinarySpec) {
-                                dependsOn binary.buildTask
-                                from(new File(binary.sharedLibraryFile.absolutePath + ".debug")) {
-                                    into NativeUtils.getPlatformPath(config) + '/shared'
-                                }
-                                from (binary.sharedLibraryFile) {
-                                    into NativeUtils.getPlatformPath(config) + '/shared'
-                                }
-                            } else if (binary instanceof StaticLibraryBinarySpec) {
-                                dependsOn binary.buildTask
-                                from (binary.staticLibraryFile) {
-                                    into NativeUtils.getPlatformPath(config) + '/static'
-                                }
-                            }
-                        }
-                    }
-                }
-
-                def buildTask = tasks.get('build')
-                def zipTask = tasks.get(taskName)
-                buildTask.dependsOn zipTask
-
-                project.artifacts {
-                    zipTask
-                }
-
-                if (project.hasProperty('publishing')) {
-                    project.publishing.publications {
-                        it.each { publication->
-                            if (publication.name == 'cpp') {
-                                zipTask.outputs.files.each { file ->
-                                    if (!publication.artifacts.contains(file))
-                                    {
-                                        publication.artifact zipTask 
-                                    }
-                                }
-                            }
                         }
                     }
                 }

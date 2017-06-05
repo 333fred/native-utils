@@ -75,16 +75,6 @@ interface BuildConfig {
     List<String> getExclude()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
-    void setStaticDeps(List<String> staticDeps)
-
-    List<String> getStaticDeps()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setSharedDeps(List<String> sharedDeps)
-
-    List<String> getSharedDeps()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
     void setSkipTests(boolean skip)
 
     boolean getSkipTests()

@@ -18,6 +18,10 @@ gradlePlugin {
             id = 'edu.wpi.first.jni-utils'
             implementationClass = 'edu.wpi.first.nativeutils.JNIUtils'
         }
+        PublishingConfig {
+            id = 'edu.wpi.first.publish-utils'
+            implementationClass = 'edu.wpi.first.nativeutils.PublishUtils'
+        }
     }
     
 }

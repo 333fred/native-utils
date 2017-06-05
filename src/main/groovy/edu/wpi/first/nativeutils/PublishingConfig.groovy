@@ -2,24 +2,33 @@ package edu.wpi.first.nativeutils
 
 import org.gradle.model.*
 import org.gradle.api.Task
+import org.gradle.api.Named
 
 @Managed
-interface PublishingConfig {
-    @SuppressWarnings("GroovyUnusedDeclaration")
-      void setCppPublishingExtension(String extension)
+interface PublishingConfig extends Named  {
+    @Unmanaged
+    void setExtraPublishingTasks(List<Task> tasks)
+    @Unmanaged
+    List<Task> getExtraPublishingTasks()
 
-      String getCppPublishingExtension()
+    void setIncludeComponents(List<String> includes)
+    List<String> getIncludeComponents()
 
-      void setCppPublishingExtraArtifacts(List<Task> tasks)
+    void setExcludeComponents(List<String> excludes)
+    List<String> getExcludeComponents()
 
-      List<Task> getCppPublishingExtraArtifacts()
+    void setIsJni(boolean isJni)
+    boolean getIsJni()
 
-      @SuppressWarnings("GroovyUnusedDeclaration")
-      void setJniPublishingExtension(String extension)
+    void setIsNative(boolean isNative)
+    boolean getIsNative()
 
-      String getJniPublishingExtension()
-      
-      void setJniPublishingExtraArtifacts(List<Task> tasks)
+    void setArtifactId(String id)
+    String getArtifactId()
 
-      List<Task> getJniPublishingExtraArtifacts()
+    void setGroupId(String id)
+    String getGroupId()
+
+    void setVersion(String version)
+    String getVersion()
 }
