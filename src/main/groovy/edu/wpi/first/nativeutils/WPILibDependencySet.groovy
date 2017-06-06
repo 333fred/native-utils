@@ -35,8 +35,12 @@ public class WPILibDependencySet implements NativeDependencySet {
           dirPath = 'shared'
       }
 
-      def files =  m_project.fileTree("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/").filter { it.isFile() }.files
-      return m_project.files(files)
+      def fileList =  m_project.fileTree("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/").filter { it.isFile() }
+      if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows') {
+          fileList.filter { it.endsWith('.lib') }
+      }
+
+      return m_project.files(fileList.files)
     }
 
     public FileCollection getLinkFiles() {
