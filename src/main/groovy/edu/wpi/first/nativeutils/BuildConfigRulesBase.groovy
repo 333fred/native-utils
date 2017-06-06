@@ -62,38 +62,11 @@ class BuildConfigRulesBase  {
         if (config.crossCompile) {
             return doesToolChainExist(config, projectLayout)
         }
-
-        def currentOs;
-        def isArm;
-
-        if (OperatingSystem.current().isWindows()) {
-            currentOs = 'windows'
-            isArm = false
-        } else if (OperatingSystem.current().isMacOsX()) {
-            currentOs = 'osx'
-            isArm = false
-        } else if (OperatingSystem.current().isLinux()) {
-            currentOs = 'linux'
-            def arch = System.getProperty("os.arch")
-            if (arch == 'amd64' || arch == 'i386') {
-                isArm = false
-            } else {
-                isArm = true
-            }
-        } else if (OperatingSystem.current().isUnix()) {
-            currentOs = 'unix'
-            def arch = System.getProperty("os.arch")
-            if (arch == 'amd64' || arch == 'i386') {
-                isArm = false
-            } else {
-                isArm = true
-            }
+        if (!config.detectPlatform) {
+            return false
         }
 
-
-
-        return currentOs == config.operatingSystem.toLowerCase() &&
-               isArm == config.isArm
+        return config.detectPlatform(config)
     }
 
     static boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {

@@ -90,4 +90,9 @@ interface BuildConfig extends Named {
 
     boolean getReleaseStripBinaries()
 
+    @Unmanaged
+    void setDetectPlatform(Closure closure)
+    @Unmanaged
+    Closure getDetectPlatform()
+
 }
