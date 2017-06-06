@@ -40,7 +40,7 @@ class DependencyConfigRules extends RuleSource {
                 task = rootProject.tasks.create(taskName, Copy) {
                     def file
                     filesList.each {
-                        if (it.toString().endsWith("${classifier}.${extension}")) {
+                        if (it.toString().endsWith("${classifier}.${extension}") && it.toString().contains("${dependency.name}-".toString())) {
                             file = it
                         }
                     }
