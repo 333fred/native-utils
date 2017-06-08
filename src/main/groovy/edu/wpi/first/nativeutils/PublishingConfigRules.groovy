@@ -68,6 +68,9 @@ class PublishingConfigRules extends RuleSource {
                                         from (binary.sharedLibraryFile) {
                                             into NativeUtils.getPlatformPath(config) + '/shared'
                                         }
+                                        from (binary.sharedLibraryLinkFile) {
+                                            into NativeUtils.getPlatformPath(config) + '/shared'
+                                        }
                                     } else if (binary instanceof StaticLibraryBinarySpec) {
                                         dependsOn binary.buildTask
                                         from (binary.staticLibraryFile) {

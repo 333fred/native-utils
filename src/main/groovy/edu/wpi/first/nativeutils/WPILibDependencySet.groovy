@@ -27,7 +27,7 @@ public class WPILibDependencySet implements NativeDependencySet {
         return m_project.files("${m_rootLocation}/headers")
     }
 
-    private FileCollection getFiles() {
+    private FileCollection getFiles(boolean isRuntime) {
       def classifier = NativeUtils.getClassifier(m_binarySpec)
       def platformPath = NativeUtils.getPlatformPath(m_binarySpec)
       def dirPath = 'static'
@@ -36,18 +36,18 @@ public class WPILibDependencySet implements NativeDependencySet {
       }
 
       def fileList =  m_project.fileTree("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/").filter { it.isFile() }
-      if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows') {
-          fileList.filter { it.endsWith('.lib') }
+      if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows' && !isRuntime) {
+          fileList = fileList.filter { it.toString().endsWith('.lib') }
       }
 
       return m_project.files(fileList.files)
     }
 
     public FileCollection getLinkFiles() {
-        return getFiles()
+        return getFiles(false)
     }
 
     public FileCollection getRuntimeFiles() {
-        return getFiles()
+        return getFiles(true)
     }
 }
