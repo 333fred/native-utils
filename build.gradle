@@ -26,8 +26,12 @@ gradlePlugin {
             id = 'edu.wpi.first.dependency-utils'
             implementationClass = 'edu.wpi.first.nativeutils.DependencyUtils'
         }
+        ExportsUtils {
+            id = 'edu.wpi.first.exports-utils'
+            implementationClass = 'edu.wpi.first.nativeutils.ExportsUtils'
+        }
     }
-    
+
 }
 
 version = '0.1-SNAPSHOT'

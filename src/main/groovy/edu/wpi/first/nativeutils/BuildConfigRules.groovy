@@ -33,6 +33,8 @@ interface DependencyConfigSpec extends ModelMap<DependencyConfig> {}
 
 interface PublishingConfigSpec extends ModelMap<PublishingConfig> {}
 
+interface ExportsConfigSpec extends ModelMap<ExportsConfig> {}
+
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
 
@@ -40,7 +42,7 @@ class BuildConfigRules extends RuleSource {
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
 
-    
+
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('publishingConfigs')
     void createPublishingConfigs(PublishingConfigSpec configs) {}
@@ -49,10 +51,13 @@ class BuildConfigRules extends RuleSource {
     @Model('dependencyConfigs')
     void createDependencyConfigs(DependencyConfigSpec configs) {}
 
-    
+
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('jniConfig')
     void createJniConfig(JNIConfig config) {}
+
+    @Model('exportsConfigs')
+    void createExportsConfigs(ExportsConfigSpec exports) {}
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate
@@ -139,8 +144,8 @@ class BuildConfigRules extends RuleSource {
         configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
             binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
-                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                    && ((config.debugStripBinaries && binary.buildType.name == 'debug') ||  (config.releaseStripBinaries && binary.buildType.name == 'release'))
+                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem
+                    && ((config.debugStripBinaries && binary.buildType.name.contains('debug')) ||  (config.releaseStripBinaries && binary.buildType.name.contains('release')))
                     && binary.targetPlatform.operatingSystem.name != 'windows'
                     && binary instanceof SharedLibraryBinarySpec) {
                     def input = binary.buildTask.name
@@ -169,7 +174,7 @@ class BuildConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createPlatforms(PlatformContainer platforms, ProjectLayout projectLayout, BuildConfigSpec configs) { 
+    void createPlatforms(PlatformContainer platforms, ProjectLayout projectLayout, BuildConfigSpec configs) {
         if (configs == null) {
             return
         }
@@ -199,8 +204,8 @@ class BuildConfigRules extends RuleSource {
             return
         }
 
-        binaries.findAll { 
-            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name == 'debug' }.each { binary ->
+        binaries.findAll {
+            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name.contains('debug') }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
                         BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)
@@ -225,8 +230,8 @@ class BuildConfigRules extends RuleSource {
             return
         }
 
-        binaries.findAll { 
-            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name == 'release' }.each { binary ->
+        binaries.findAll {
+            BuildConfigRulesBase.isNativeProject(it) && it.buildType.name.contains('release') }.each { binary ->
             def config = enabledConfigs.find {
                 it.architecture == binary.targetPlatform.architecture.name &&
                         BuildConfigRulesBase.getCompilerFamily(it.compilerFamily).isAssignableFrom(binary.toolChain.class)

@@ -5,11 +5,15 @@ import org.gradle.model.*
 @Managed
 interface JNIConfig {
     @SuppressWarnings("GroovyUnusedDeclaration")
-      void setJniDefinitionClasses(List<String> classes)
+        void setJniDefinitionClasses(List<String> classes)
 
-      List<String> getJniDefinitionClasses()
+        List<String> getJniDefinitionClasses()
 
-      void setJniArmHeaderLocation(File location)
+        void setJniArmHeaderLocation(File location)
 
-      File getJniArmHeaderLocation()
+        File getJniArmHeaderLocation()
+
+        void setForceStaticLinks(List<String> staticLinks)
+
+        List<String> getForceStaticLinks()
 }
