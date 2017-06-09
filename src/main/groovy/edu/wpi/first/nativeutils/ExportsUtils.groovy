@@ -5,7 +5,7 @@ import org.gradle.api.Project
 
 public class ExportsUtils implements Plugin<Project> {
     static String getGeneratorFilePath() {
-        return "C:\\Users\\thadh\\Documents\\GitHub\\ThadHouse\\DefFileGenerator\\Build\\Release\\DefFileGenerator.exe"
+        return "C:\\Users\\thadh\\Documents\\GitHub\\thadhouse\\native-utils\\src\\main\\resources\\DefFileGenerator.exe"
     }
 
     @Override

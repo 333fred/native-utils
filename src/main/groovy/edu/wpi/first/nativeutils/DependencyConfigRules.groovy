@@ -58,7 +58,7 @@ class DependencyConfigRules extends RuleSource {
             def nativeBinaries = binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }
             nativeBinaries.each { bin ->
                 def component = bin.component
-                if (config.sharedConfigs.containsKey(component.name)) {
+                if (config.sharedConfigs != null && config.sharedConfigs.containsKey(component.name)) {
                     def binariesToApplyTo = nativeBinaries.findAll {
                         config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
                     }
@@ -67,7 +67,7 @@ class DependencyConfigRules extends RuleSource {
                     }
                 }
 
-                if (config.staticConfigs.containsKey(component.name)) {
+                if (config.staticConfigs != null && config.staticConfigs.containsKey(component.name)) {
                     def binariesToApplyTo = nativeBinaries.findAll {
                         config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
                     }

@@ -54,7 +54,6 @@ class ExportsConfigRules extends RuleSource {
                                 def task = tasks.get(linkTaskName)
                                 task.doFirst {
                                     def exeName = ExportsUtils.getGeneratorFilePath();
-                                    println objDir
                                     def files = project.fileTree(objDir).include("**/*.obj")
                                     project.exec {
                                         executable = exeName
@@ -65,6 +64,32 @@ class ExportsConfigRules extends RuleSource {
 
                                     }
 
+                                    def lines = []
+
+                                    def excludeSymbols
+                                    if (binary.targetPlatform.architecture.name == 'x86') {
+                                        excludeSymbols = config.x86ExcludeSymbols
+                                    } else {
+                                        excludeSymbols = config.x64ExcludeSymbols
+                                    }
+
+                                    if (excludeSymbols == null) {
+                                        excludeSymbols = []
+                                    }
+
+                                    defFile.eachLine { line->
+                                        def symbol = line.trim()
+                                        def space = symbol.indexOf(' ')
+                                        if (space != -1) {
+                                            symbol = symbol.substring(0, space)
+                                        }
+                                        if (!excludeSymbols.contains(symbol)) {
+                                            lines << line
+                                        }
+                                    }
+                                    defFile.withWriter{ out ->
+                                        lines.each {out.println it}
+                                    }
                                 }
                             }
                         }

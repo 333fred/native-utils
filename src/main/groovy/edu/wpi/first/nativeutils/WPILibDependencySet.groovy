@@ -28,19 +28,21 @@ public class WPILibDependencySet implements NativeDependencySet {
     }
 
     private FileCollection getFiles(boolean isRuntime) {
-      def classifier = NativeUtils.getClassifier(m_binarySpec)
-      def platformPath = NativeUtils.getPlatformPath(m_binarySpec)
-      def dirPath = 'static'
-      if (m_sharedDep) {
-          dirPath = 'shared'
-      }
+        def classifier = NativeUtils.getClassifier(m_binarySpec)
+        def platformPath = NativeUtils.getPlatformPath(m_binarySpec)
+        def dirPath = 'static'
+        if (m_sharedDep) {
+            dirPath = 'shared'
+        }
 
-      def fileList =  m_project.fileTree("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/").filter { it.isFile() }
-      if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows' && !isRuntime) {
-          fileList = fileList.filter { it.toString().endsWith('.lib') }
-      }
+        def fileList =  m_project.fileTree("${m_rootLocation}/${classifier}/${platformPath}/${dirPath}/").filter { it.isFile() }
+        if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows' && !isRuntime) {
+            fileList = fileList.filter { it.toString().endsWith('.lib') }
+        } else if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows') {
+                fileList = fileList.filter { it.toString().endsWith('.dll') }
+        }
 
-      return m_project.files(fileList.files)
+        return m_project.files(fileList.files)
     }
 
     public FileCollection getLinkFiles() {
