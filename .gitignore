@@ -21,7 +21,6 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
@@ -174,7 +173,6 @@ nbactions.xml
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
@@ -221,3 +219,5 @@ gradle-app.setting
 
 #VSCode
 .vscode/
+
+!src/resources/DefFileGenerator.exe
