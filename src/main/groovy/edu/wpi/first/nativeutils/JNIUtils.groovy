@@ -8,6 +8,6 @@ public class JNIUtils implements Plugin<Project> {
     void apply(Project project) {
         project.ext.JNIConfig = edu.wpi.first.nativeutils.JNIConfig
         
-        project.pluginManager.apply(edu.wpi.first.nativeutils.BuildConfigRulesJNI)
+        project.pluginManager.apply(edu.wpi.first.nativeutils.JNIConfigRules)
     }
 }

@@ -113,8 +113,7 @@ class PublishingConfigRules extends RuleSource {
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    @Mutate
-    void createJniZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+    private void createJniZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
                         ProjectLayout projectLayout, BuildConfigSpec configs, JNIConfig jniConfig, PublishingConfigSpec publishConfigs,
                         ComponentSpecContainer components) {
 

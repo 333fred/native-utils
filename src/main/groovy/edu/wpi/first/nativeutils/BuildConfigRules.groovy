@@ -35,6 +35,8 @@ interface PublishingConfigSpec extends ModelMap<PublishingConfig> {}
 
 interface ExportsConfigSpec extends ModelMap<ExportsConfig> {}
 
+interface JNIConfigSpec extends ModelMap<JNIConfig> {}
+
 @SuppressWarnings("GroovyUnusedDeclaration")
 class BuildConfigRules extends RuleSource {
 
@@ -51,13 +53,12 @@ class BuildConfigRules extends RuleSource {
     @Model('dependencyConfigs')
     void createDependencyConfigs(DependencyConfigSpec configs) {}
 
-
     @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('jniConfig')
-    void createJniConfig(JNIConfig config) {}
+    @Model('jniConfigs')
+    void createJniConfigs(JNIConfigSpec configs) {}
 
     @Model('exportsConfigs')
-    void createExportsConfigs(ExportsConfigSpec exports) {}
+    void createExportsConfigs(ExportsConfigSpec configs) {}
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Validate

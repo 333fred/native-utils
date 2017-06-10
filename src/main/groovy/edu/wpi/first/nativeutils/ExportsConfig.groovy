@@ -10,4 +10,7 @@ interface ExportsConfig extends Named {
 
     void setX64ExcludeSymbols(List<String> symbols)
     List<String> getX64ExcludeSymbols();
+
+    void setExcludeBuildTypes(List<String> excludes)
+    List<String> getExcludeBuildTypes()
 }

@@ -1,9 +1,11 @@
 package edu.wpi.first.nativeutils
 
 import org.gradle.model.*
+import org.gradle.api.Named
+import org.gradle.api.tasks.SourceSet
 
 @Managed
-interface JNIConfig {
+interface JNIConfig extends Named {
     @SuppressWarnings("GroovyUnusedDeclaration")
         void setJniDefinitionClasses(List<String> classes)
 
@@ -13,7 +15,11 @@ interface JNIConfig {
 
         File getJniArmHeaderLocation()
 
-        void setForceStaticLinks(List<String> staticLinks)
-
-        List<String> getForceStaticLinks()
+        @Unmanaged
+        void setSourceSets(List<SourceSet> sources)
+        @Unmanaged
+        List<SourceSet> getSourceSets()
+        
+        void setCreateJar(boolean jar);
+        boolean getCreateJar();
 }

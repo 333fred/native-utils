@@ -18,7 +18,7 @@ import org.gradle.internal.os.OperatingSystem
 class ExportsConfigRules extends RuleSource {
 
     @Validate
-    void zzzzzzzzzzzzzzzzzzzzzzsetupExports(ModelMap<Task> tasks, ExportsConfigSpec configs, ProjectLayout projectLayout, ComponentSpecContainer components) {
+    void setupExports(ModelMap<Task> tasks, ExportsConfigSpec configs, ProjectLayout projectLayout, ComponentSpecContainer components) {
         if (!OperatingSystem.current().isWindows()) {
             return
         }
@@ -39,8 +39,11 @@ class ExportsConfigRules extends RuleSource {
                     // Component matches config
                     if (component instanceof NativeLibrarySpec) {
                         component.binaries.each { binary->
+                            def excludeBuildTypes = config.excludeBuildTypes == null ? [] : config.excludeBuildTypes
                             if (binary.targetPlatform.operatingSystem.name == 'windows'
-                                && binary instanceof SharedLibraryBinarySpec) {
+                                && binary instanceof SharedLibraryBinarySpec
+                                && !excludeBuildTypes.contains(binary.buildType.name)) {
+                                println "building config $binary"
                                 def objDir
                                 binary.tasks.withType(CppCompile) {
                                     objDir = it.objectFileDir
