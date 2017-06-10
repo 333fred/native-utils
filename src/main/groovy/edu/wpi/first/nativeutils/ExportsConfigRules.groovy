@@ -43,7 +43,6 @@ class ExportsConfigRules extends RuleSource {
                             if (binary.targetPlatform.operatingSystem.name == 'windows'
                                 && binary instanceof SharedLibraryBinarySpec
                                 && !excludeBuildTypes.contains(binary.buildType.name)) {
-                                println "building config $binary"
                                 def objDir
                                 binary.tasks.withType(CppCompile) {
                                     objDir = it.objectFileDir

@@ -18,7 +18,7 @@ class PublishingConfigRules extends RuleSource {
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
-    void createNativeZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
+    void createNativeZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes,
                         ProjectLayout projectLayout, BuildConfigSpec configs, PublishingConfigSpec publishConfigs,
                         ComponentSpecContainer components) {
         if (publishConfigs == null) {
@@ -30,7 +30,7 @@ class PublishingConfigRules extends RuleSource {
         if (c.size() == 0) {
             return
         }
-        
+
         c.each { publishConfig->
             def componentsToBuild = components.findAll { true }
             if (publishConfig.includeComponents == null || publishConfig.includeComponents.size() == 0) {
@@ -41,7 +41,7 @@ class PublishingConfigRules extends RuleSource {
                     }
                 }
             } else {
-                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it.name) }
+                componentsToBuild.removeAll { !publishConfig.includeComponents.contains(it.name) }
             }
             componentsToBuild.each { component ->
                 buildTypes.each { buildType ->
@@ -57,7 +57,7 @@ class PublishingConfigRules extends RuleSource {
 
                             binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                                 if (binary.targetPlatform.architecture.name == config.architecture
-                                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
+                                    && binary.targetPlatform.operatingSystem.name == config.operatingSystem
                                     && binary.buildType.name == buildType.name
                                     && binary.component.name == component.name) {
                                     if (binary instanceof SharedLibraryBinarySpec) {
@@ -103,7 +103,7 @@ class PublishingConfigRules extends RuleSource {
                         cppPublication.artifact zipTask
                     }
                 }
-                
+
                 def cppPublication = project.publishing.publications.findAll { it.name == publishConfig.name }[0]
                 publishConfig.extraPublishingTasks.each {
                     cppPublication.artifact it
@@ -113,11 +113,11 @@ class PublishingConfigRules extends RuleSource {
     }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
-    private void createJniZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes, 
-                        ProjectLayout projectLayout, BuildConfigSpec configs, JNIConfig jniConfig, PublishingConfigSpec publishConfigs,
+    @Mutate
+    void createJniZipTasks(ModelMap<Task> tasks, BinaryContainer binaries, BuildTypeContainer buildTypes,
+                        ProjectLayout projectLayout, BuildConfigSpec configs, JNIConfigSpec jniConfigs, PublishingConfigSpec publishConfigs,
                         ComponentSpecContainer components) {
-
-        if (jniConfig == null) {
+        if (jniConfigs == null || jniConfigs.size() < 0) {
             return
         }
         if (publishConfigs == null) {
@@ -129,7 +129,7 @@ class PublishingConfigRules extends RuleSource {
         if (c.size() == 0) {
             return
         }
-        
+
         c.each { publishConfig->
             def componentsToBuild = components.findAll { true }
             if (publishConfig.includeComponents == null || publishConfig.includeComponents.size() == 0) {
@@ -140,7 +140,7 @@ class PublishingConfigRules extends RuleSource {
                     }
                 }
             } else {
-                componentsToBuild.removeAll { publishConfig.includeComponents.contains(it.name) }
+                componentsToBuild.removeAll { !publishConfig.includeComponents.contains(it.name) }
             }
             componentsToBuild.each { component ->
                 buildTypes.each { buildType ->
@@ -156,8 +156,9 @@ class PublishingConfigRules extends RuleSource {
 
                             binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                                 if (binary.targetPlatform.architecture.name == config.architecture
-                                && binary.targetPlatform.operatingSystem.name == config.operatingSystem 
-                                && binary.buildType.name == buildType.name) {
+                                && binary.targetPlatform.operatingSystem.name == config.operatingSystem
+                                && binary.buildType.name == buildType.name
+                                && binary.component.name == component.name) {
                                 if (binary instanceof SharedLibraryBinarySpec) {
                                     dependsOn binary.buildTask
                                     from (binary.sharedLibraryFile) {
@@ -190,7 +191,7 @@ class PublishingConfigRules extends RuleSource {
                         cppPublication.artifact zipTask
                     }
                 }
-                
+
                 def cppPublication = project.publishing.publications.findAll { it.name == publishConfig.name }[0]
                 publishConfig.extraPublishingTasks.each {
                     cppPublication.artifact it

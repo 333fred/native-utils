@@ -19,7 +19,4 @@ interface JNIConfig extends Named {
         void setSourceSets(List<SourceSet> sources)
         @Unmanaged
         List<SourceSet> getSourceSets()
-        
-        void setCreateJar(boolean jar);
-        boolean getCreateJar();
 }
