@@ -4,8 +4,31 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 
 public class ExportsUtils implements Plugin<Project> {
+    static File extractedFile = null
+
     static String getGeneratorFilePath() {
-        return "C:\\Users\\thadh\\Documents\\GitHub\\thadhouse\\native-utils\\src\\main\\resources\\DefFileGenerator.exe"
+        if (extractedFile != null) {
+            return extractedFile.toString()
+        }
+
+        InputStream is = ExportsUtils.class.getResourceAsStream("/DefFileGenerator.exe");
+        extractedFile = File.createTempFile("DefFileGenerator", ".exe")
+        extractedFile.deleteOnExit();
+
+        OutputStream os = new FileOutputStream(extractedFile);
+
+        byte[] buffer = new byte[1024];
+        int readBytes;
+        try {
+            while ((readBytes = is.read(buffer)) != -1) {
+            os.write(buffer, 0, readBytes);
+            }
+        } finally {
+            os.close();
+            is.close();
+        }
+
+        return extractedFile.toString()
     }
 
     @Override
