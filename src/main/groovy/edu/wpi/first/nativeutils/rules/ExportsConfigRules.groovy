@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.api.GradleException
 import org.gradle.api.Task
@@ -13,6 +13,7 @@ import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.api.file.FileTree
 import org.gradle.internal.os.OperatingSystem
+import edu.wpi.first.nativeutils.ExportsUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class ExportsConfigRules extends RuleSource {

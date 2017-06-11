@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.configs
 
 import org.gradle.model.*
 import org.gradle.api.Named

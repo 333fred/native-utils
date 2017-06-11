@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.api.GradleException
 import org.gradle.api.Task
@@ -10,6 +10,7 @@ import org.gradle.nativeplatform.SharedLibraryBinarySpec
 import org.gradle.platform.base.BinaryContainer
 import org.gradle.language.cpp.tasks.CppCompile
 import org.gradle.api.file.FileTree
+import edu.wpi.first.nativeutils.NativeUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class JNIConfigRules extends RuleSource {
@@ -52,7 +53,7 @@ class JNIConfigRules extends RuleSource {
                     }
                     project.exec {
                         executable org.gradle.internal.jvm.Jvm.current().getExecutable('javah')
-                        
+
                         args '-d', outputFolder
                         args '-classpath', classPath
                         jniConfig.jniDefinitionClasses.each {
@@ -115,7 +116,7 @@ class JNIConfigRules extends RuleSource {
                     if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
 
-                        if (config.crossCompile) {
+                        if (BuildConfigRulesBase.isCrossCompile(config)) {
                             binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocation.absolutePath
                             binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocation.absolutePath + '/linux'
                         } else {
@@ -137,7 +138,7 @@ class JNIConfigRules extends RuleSource {
                             }
                         }
                         headersTask.outputs.files.each { file ->
-                            if (config.crossCompile) {
+                            if (BuildConfigRulesBase.isCrossCompile(config)) {
                                 binary.cppCompiler.args '-I', file.getPath()
                             } else {
                                 NativeUtils.setPlatformSpecificIncludeFlag(file.getPath(), binary.cppCompiler)

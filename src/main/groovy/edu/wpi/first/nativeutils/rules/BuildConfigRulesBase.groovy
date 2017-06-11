@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.language.base.internal.ProjectLayout
@@ -15,12 +15,16 @@ import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.BinarySpec
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
+import edu.wpi.first.nativeutils.configs.BuildConfig
+import edu.wpi.first.nativeutils.NativeUtils
+import edu.wpi.first.nativeutils.configs.CrossBuildConfig
 
 class BuildConfigRulesBase  {
     private static final ToolSearchPath toolSearchPath = new ToolSearchPath(OperatingSystem.current())
 
     static String binTools(String tool, ProjectLayout projectLayout, BuildConfig config) {
         def toolChainPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
+        println 'beforePrefix'
         def compilerPrefix = config.toolChainPrefix
         if (toolChainPath != null) return "${toolChainPath}/${compilerPrefix}${tool}"
         return "${compilerPrefix}${tool}"
@@ -47,10 +51,14 @@ class BuildConfigRulesBase  {
         return binary instanceof NativeBinarySpec
     }
 
+    static boolean isCrossCompile(BuildConfig config) {
+        return config in CrossBuildConfig
+    }
+
     static boolean isComponentEnabled(BuildConfig config, String componentName) {
         if (config.exclude == null || config.exclude.size() == 0) {
             return true
-        } 
+        }
         return !config.exclude.contains(componentName)
     }
 
@@ -59,7 +67,7 @@ class BuildConfigRulesBase  {
      * or specific cross compiler is specified
      */
     static boolean isConfigEnabled(BuildConfig config, ProjectLayout projectLayout) {
-        if (config.crossCompile) {
+        if (isCrossCompile(config)) {
             return doesToolChainExist(config, projectLayout)
         }
         if (!config.detectPlatform) {
@@ -70,7 +78,7 @@ class BuildConfigRulesBase  {
     }
 
     static boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {
-        if (!config.crossCompile) {
+        if (!isCrossCompile(config)) {
             return true;
         }
 

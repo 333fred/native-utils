@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.configs
 
 import org.gradle.model.*
 import org.gradle.api.Named
@@ -11,24 +11,14 @@ interface BuildConfig extends Named {
     String getArchitecture()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
-    void setIsArm(boolean isArm)
+    void setToolChainPrefix(String prefix)
 
-    boolean getIsArm()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setToolChainPath(String path)
-
-    String getToolChainPath()
+    String getToolChainPrefix()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setOperatingSystem(String os)
 
     String getOperatingSystem()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setToolChainPrefix(String prefix)
-
-    String getToolChainPrefix()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setCompilerArgs(List<String> args)
@@ -59,11 +49,6 @@ interface BuildConfig extends Named {
     void setLinkerArgs(List<String> args)
 
     List<String> getLinkerArgs()
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    void setCrossCompile(boolean cc)
-
-    boolean getCrossCompile()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     void setCompilerFamily(String family)

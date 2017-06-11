@@ -6,8 +6,8 @@ import org.gradle.api.Project
 public class PublishUtils implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        project.ext.PublishingConfig = edu.wpi.first.nativeutils.PublishingConfig
-        
-        project.pluginManager.apply(edu.wpi.first.nativeutils.PublishingConfigRules)
+        project.ext.PublishingConfig = edu.wpi.first.nativeutils.configs.PublishingConfig
+
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.PublishingConfigRules)
     }
 }

@@ -6,8 +6,8 @@ import org.gradle.api.Project
 public class DependencyUtils implements Plugin<Project> {
     @Override
     void apply(Project project) {
-        project.ext.DependencyConfig = edu.wpi.first.nativeutils.DependencyConfig
-        
-        project.pluginManager.apply(edu.wpi.first.nativeutils.DependencyConfigRules)
+        project.ext.DependencyConfig = edu.wpi.first.nativeutils.configs.DependencyConfig
+
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.DependencyConfigRules)
     }
 }

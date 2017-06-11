@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.api.Task
 import org.gradle.api.tasks.bundling.Jar
@@ -12,6 +12,7 @@ import org.gradle.nativeplatform.StaticLibraryBinarySpec
 import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
+import edu.wpi.first.nativeutils.NativeUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class PublishingConfigRules extends RuleSource {

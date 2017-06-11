@@ -33,8 +33,8 @@ public class ExportsUtils implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.ext.ExportsConfig = edu.wpi.first.nativeutils.ExportsConfig
+        project.ext.ExportsConfig = edu.wpi.first.nativeutils.configs.ExportsConfig
 
-        project.pluginManager.apply(edu.wpi.first.nativeutils.ExportsConfigRules)
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.ExportsConfigRules)
     }
 }

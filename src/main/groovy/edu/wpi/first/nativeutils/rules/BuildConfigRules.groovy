@@ -1,4 +1,4 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -26,6 +26,8 @@ import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.BinarySpec
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.platform.base.PlatformContainer
+import edu.wpi.first.nativeutils.configs.*
+import edu.wpi.first.nativeutils.NativeUtils
 
 interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
@@ -104,7 +106,7 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void disableCrossCompileGoogleTest(BinaryContainer binaries, BuildConfigSpec configs) {
-        def crossCompileConfigs = configs.findAll { it.crossCompile }.collect { it.architecture }
+        def crossCompileConfigs = configs.findAll { BuildConfigRulesBase.isCrossCompile(it) }.collect { it.architecture }
         if (crossCompileConfigs != null && !crossCompileConfigs.empty) {
             binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
                 if (crossCompileConfigs.contains(spec.targetPlatform.architecture.name)) {
@@ -264,10 +266,6 @@ class BuildConfigRules extends RuleSource {
                 t.eachPlatform { toolChain ->
                     def config = vcppConfigs.find { it.architecture == toolChain.platform.architecture.name }
                     if (config != null) {
-                        def vsToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-                        if (vsToolPath != null) {
-                            path(vsToolPath)
-                        }
                         if (config.toolChainPrefix != null) {
                             toolChain.cCompiler.executable = config.toolChainPrefix + toolChain.cCompiler.executable
                             toolChain.cppCompiler.executable = config.toolChainPrefix + toolChain.cppCompiler.executable
@@ -328,10 +326,6 @@ class BuildConfigRules extends RuleSource {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->
                     target(config.architecture) {
-                        def clangToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-                        if (clangToolPath != null) {
-                            path(clangToolPath)
-                        }
                         if (config.toolChainPrefix != null) {
                             cCompiler.executable = config.toolChainPrefix + cCompiler.executable
                             cppCompiler.executable = config.toolChainPrefix + cppCompiler.executable

@@ -1,10 +1,12 @@
-package edu.wpi.first.nativeutils
+package edu.wpi.first.nativeutils.rules
 
 import org.gradle.api.Task
 import org.gradle.api.tasks.Copy
 import org.gradle.language.base.internal.ProjectLayout
 import org.gradle.model.*
 import org.gradle.platform.base.BinaryContainer
+import edu.wpi.first.nativeutils.dependencysets.*
+import edu.wpi.first.nativeutils.NativeUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class DependencyConfigRules extends RuleSource {
@@ -63,7 +65,7 @@ class DependencyConfigRules extends RuleSource {
                         config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
                     }
                     binariesToApplyTo.each { binary->
-                        binary.lib(new WPILibDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject, true))
+                        binary.lib(new SharedDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
                     }
                 }
 
@@ -72,7 +74,7 @@ class DependencyConfigRules extends RuleSource {
                         config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
                     }
                     binariesToApplyTo.each { binary->
-                        binary.lib(new WPILibDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject, false))
+                        binary.lib(new StaticDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
                     }
                 }
             }
