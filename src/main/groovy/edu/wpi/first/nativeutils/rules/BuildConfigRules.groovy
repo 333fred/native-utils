@@ -99,6 +99,7 @@ class BuildConfigRules extends RuleSource {
         if (projectLayout.projectIdentifier.hasProperty('releaseBuild')) {
             buildTypes.create('release')
         } else {
+            println 'Currently building a debug binary. To build release, add -PreleaseBuild to your gradle command.'
             buildTypes.create('debug')
         }
     }
