@@ -24,7 +24,6 @@ class BuildConfigRulesBase  {
 
     static String binTools(String tool, ProjectLayout projectLayout, BuildConfig config) {
         def toolChainPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-        println 'beforePrefix'
         def compilerPrefix = config.toolChainPrefix
         if (toolChainPath != null) return "${toolChainPath}/${compilerPrefix}${tool}"
         return "${compilerPrefix}${tool}"

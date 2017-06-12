@@ -295,15 +295,15 @@ class BuildConfigRules extends RuleSource {
                 gccConfigs.each { config ->
                     target(config.architecture) {
                         def gccToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-                        if (gccToolPath != null) {
-                            path(gccToolPath)
+                        if (gccToolPath == null) {
+                            gccToolPath = ""
                         }
                         if (config.toolChainPrefix != null) {
-                            cCompiler.executable = config.toolChainPrefix + cCompiler.executable
-                            cppCompiler.executable = config.toolChainPrefix + cppCompiler.executable
-                            linker.executable = config.toolChainPrefix + linker.executable
-                            assembler.executable = config.toolChainPrefix + assembler.executable
-                            staticLibArchiver.executable = config.toolChainPrefix + staticLibArchiver.executable
+                            cCompiler.executable = gccToolPath + config.toolChainPrefix + cCompiler.executable
+                            cppCompiler.executable = gccToolPath + config.toolChainPrefix + cppCompiler.executable
+                            linker.executable = gccToolPath + config.toolChainPrefix + linker.executable
+                            assembler.executable = gccToolPath + config.toolChainPrefix + assembler.executable
+                            staticLibArchiver.executable = gccToolPath + config.toolChainPrefix + staticLibArchiver.executable
                         }
 
                         if (config.compilerArgs != null) {
