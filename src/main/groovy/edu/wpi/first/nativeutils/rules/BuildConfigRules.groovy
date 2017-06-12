@@ -12,6 +12,7 @@ import org.gradle.language.cpp.tasks.CppCompile
 import org.gradle.model.*
 import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.NativeBinarySpec
+import org.gradle.nativeplatform.NativeExecutableSpec
 import org.gradle.nativeplatform.SharedLibraryBinarySpec
 import org.gradle.nativeplatform.StaticLibraryBinarySpec
 import org.gradle.nativeplatform.test.googletest.GoogleTestTestSuiteBinarySpec
@@ -120,10 +121,11 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
     void setSkipGoogleTest(BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
-        def skipConfigs = configs.findAll { it.skipTests }.collect { it.architecture }
+        def skipConfigs = configs.findAll { it.skipTests }.collect { it.architecture + ':' + it.operatingSystem }
         if (skipConfigs != null && !skipConfigs.empty) {
             binaries.withType(GoogleTestTestSuiteBinarySpec) { spec ->
-                if (skipConfigs.contains(spec.targetPlatform.architecture.name)) {
+                def checkString = spec.targetPlatform.architecture.name + ':' + spec.targetPlatform.operatingSystem.name
+                if (skipConfigs.contains(checkString)) {
                     spec.buildable = false
                 }
             }
@@ -175,6 +177,18 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
+    @Mutate
+    void createInstallAllComponentsTask(ModelMap<Task> tasks, ComponentSpecContainer components) {
+        tasks.create("installAllExecutables") {
+            components.each { component->
+                if (component in NativeExecutableSpec) {
+                    component.binaries.each { binary->
+                        dependsOn binary.tasks.install
+                    }
+                }
+            }
+        }
+    }
 
     @SuppressWarnings(["GroovyUnusedDeclaration", "GrMethodMayBeStatic"])
     @Mutate
@@ -296,15 +310,15 @@ class BuildConfigRules extends RuleSource {
                 gccConfigs.each { config ->
                     target(config.architecture) {
                         def gccToolPath = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
-                        if (gccToolPath != null) {
-                            path(gccToolPath)
+                        if (gccToolPath == null) {
+                            gccToolPath = ""
                         }
                         if (config.toolChainPrefix != null) {
-                            cCompiler.executable = config.toolChainPrefix + cCompiler.executable
-                            cppCompiler.executable = config.toolChainPrefix + cppCompiler.executable
-                            linker.executable = config.toolChainPrefix + linker.executable
-                            assembler.executable = config.toolChainPrefix + assembler.executable
-                            staticLibArchiver.executable = config.toolChainPrefix + staticLibArchiver.executable
+                            cCompiler.executable = gccToolPath + config.toolChainPrefix + cCompiler.executable
+                            cppCompiler.executable = gccToolPath + config.toolChainPrefix + cppCompiler.executable
+                            linker.executable = gccToolPath + config.toolChainPrefix + linker.executable
+                            assembler.executable = gccToolPath + config.toolChainPrefix + assembler.executable
+                            staticLibArchiver.executable = gccToolPath + config.toolChainPrefix + staticLibArchiver.executable
                         }
 
                         if (config.compilerArgs != null) {
