@@ -61,6 +61,11 @@ interface BuildConfig extends Named {
     List<String> getExclude()
 
     @SuppressWarnings("GroovyUnusedDeclaration")
+    void setInclude(List<String> toInclude)
+
+    List<String> getInclude()
+
+    @SuppressWarnings("GroovyUnusedDeclaration")
     void setSkipTests(boolean skip)
 
     boolean getSkipTests()

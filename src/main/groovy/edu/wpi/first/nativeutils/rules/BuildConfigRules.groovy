@@ -87,8 +87,14 @@ class BuildConfigRules extends RuleSource {
     void setTargetPlatforms(ComponentSpecContainer components, ProjectLayout projectLayout, BuildConfigSpec configs) {
         components.each { component ->
             configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
-                if (config.exclude == null || !config.exclude.contains(component.name)) {
-                    component.targetPlatform config.architecture
+                if (config.include == null || config.include.size() == 0) {
+                    if (config.exclude == null || !config.exclude.contains(component.name)) {
+                        component.targetPlatform config.architecture
+                    }
+                } else {
+                    if (config.include.contains(component.name)) {
+                        component.targetPlatform config.architecture
+                    }
                 }
             }
         }
