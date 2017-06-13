@@ -119,8 +119,13 @@ class JNIConfigRules extends RuleSource {
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem ) {
 
                         if (BuildConfigRulesBase.isCrossCompile(config)) {
-                            binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocation.absolutePath
-                            binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocation.absolutePath + '/linux'
+                            if (jniConfig.jniArmHeaderLocations != null && jniConfig.jniArmHeaderLocations.size() == 1 && jniConfig.jniArmHeaderLocations.containsKey('all')) {
+                                binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocations.get('all').absolutePath
+                                binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocations.get('all').absolutePath + '/linux'
+                            } else if (jniConfig.jniArmHeaderLocations != null && jniConfig.jniArmHeaderLocations.containsKey(config.architecture)) {
+                                binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocations.get(config.architecture).absolutePath
+                                binary.cppCompiler.args '-I', jniConfig.jniArmHeaderLocations.get(config.architecture).absolutePath + '/linux'
+                            }
                         } else {
                             def jdkLocation = org.gradle.internal.jvm.Jvm.current().javaHome
                             NativeUtils.setPlatformSpecificIncludeFlag("${jdkLocation}/include", binary.cppCompiler)

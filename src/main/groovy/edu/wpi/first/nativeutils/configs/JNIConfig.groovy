@@ -11,9 +11,10 @@ interface JNIConfig extends Named {
 
         List<String> getJniDefinitionClasses()
 
-        void setJniArmHeaderLocation(File location)
-
-        File getJniArmHeaderLocation()
+        @Unmanaged
+        void setJniArmHeaderLocations(Map<String, File> locations)
+        @Unmanaged
+        Map<String, File> getJniArmHeaderLocations()
 
         @Unmanaged
         void setSourceSets(List<SourceSet> sources)
