@@ -10,15 +10,94 @@ import edu.wpi.first.nativeutils.NativeUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class DependencyConfigRules extends RuleSource {
+
     @Validate
-    void setupDependencies(DependencyConfigSpec configs, BinaryContainer binaries,
+    void validateAllConfigsHaveProperties(DependencyConfigSpec configs) {
+        configs.each { config->
+            assert config.groupId != null && config.groupId != ''
+            assert config.artifactId != null && config.artifactId != ''
+            assert config.headerClassifier != null && config.headerClassifier != ''
+            assert config.ext != null && config.ext != ''
+            assert config.version != null && config.version != ''
+        }
+    }
+
+    @Validate
+    void assertDependenciesAreNotNullMaps(DependencyConfigSpec configs) {
+        configs.each { config->
+            if (config.sharedConfigs != null) {
+                config.sharedConfigs.each {
+                    assert it.value != null
+                }
+            }
+            if (config.staticConfigs != null) {
+                config.staticConfigs.each {
+                    assert it.value != null
+                }
+            }
+        }
+    }
+
+    @Validate
+    void vaidateDependenciesDontSpecifyAll(DependencyConfigSpec configs) {
+        configs.each { config->
+            def sharedConfigs
+            if (config.sharedConfigs != null) {
+                sharedConfigs = config.sharedConfigs.collect { it.key }
+            } else {
+                sharedConfigs = []
+            }
+
+            def staticConfigs
+            if (config.staticConfigs != null) {
+                staticConfigs = config.staticConfigs.collect { it.key }
+            } else {
+                staticConfigs = []
+            }
+
+            sharedConfigs.intersect(staticConfigs).each { common->
+                assert config.sharedConfigs.get(common).size() != 0 && config.staticConfigs.get(common).size() != 0
+            }
+        }
+    }
+
+    @Validate
+    void validateDependenciesDontIntersectSharedStatic(DependencyConfigSpec configs) {
+        configs.each { config->
+            def sharedConfigs
+            if (config.sharedConfigs != null) {
+                sharedConfigs = config.sharedConfigs.collect { it.key }
+            } else {
+                sharedConfigs = []
+            }
+
+            def staticConfigs
+            if (config.staticConfigs != null) {
+                staticConfigs = config.staticConfigs.collect { it.key }
+            } else {
+                staticConfigs = []
+            }
+
+            sharedConfigs.intersect(staticConfigs).each { common->
+                def sharedDeps = config.sharedConfigs.get(common)
+                def staticDeps = config.staticConfigs.get(common)
+                assert staticDeps.intersect(sharedDeps).size() == 0
+            }
+        }
+    }
+
+    @Mutate
+    void setupDependencies(ModelMap<Task> tasks, DependencyConfigSpec configs, BinaryContainer binaries,
                         ProjectLayout projectLayout, BuildConfigSpec buildConfigs) {
         def rootProject = projectLayout.projectIdentifier.rootProject
         def currentProject = projectLayout.projectIdentifier
 
         currentProject.configurations.create('nativeDeps')
 
+        def headerClassifiers = []
+
         configs.each { config->
+            headerClassifiers.add(config.headerClassifier)
             currentProject.dependencies {
                 nativeDeps group: config.groupId, name: config.artifactId, version: config.version, classifier: config.headerClassifier, ext: config.ext
             }
@@ -50,7 +129,7 @@ class DependencyConfigRules extends RuleSource {
                     into "$depLocation/${dependency.name.toLowerCase()}/${classifier}"
                 }
                 binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
-                    if (NativeUtils.getClassifier(binary) == classifier || classifier == 'headers') {
+                    if (NativeUtils.getClassifier(binary) == classifier || headerClassifiers.contains(classifier)) {
                         binary.buildTask.dependsOn task
                     }
                 }
@@ -61,8 +140,13 @@ class DependencyConfigRules extends RuleSource {
             nativeBinaries.each { bin ->
                 def component = bin.component
                 if (config.sharedConfigs != null && config.sharedConfigs.containsKey(component.name)) {
-                    def binariesToApplyTo = nativeBinaries.findAll {
-                        config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
+                    def binariesToApplyTo
+                    if (config.sharedConfigs.get(component.name).size() == 0) {
+                        binariesToApplyTo = nativeBinaries.findAll {true}
+                    } else {
+                      binariesToApplyTo = nativeBinaries.findAll {
+                            config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
+                        }
                     }
                     binariesToApplyTo.each { binary->
                         binary.lib(new SharedDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
@@ -70,8 +154,13 @@ class DependencyConfigRules extends RuleSource {
                 }
 
                 if (config.staticConfigs != null && config.staticConfigs.containsKey(component.name)) {
-                    def binariesToApplyTo = nativeBinaries.findAll {
-                        config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
+                    def binariesToApplyTo
+                    if (config.staticConfigs.get(component.name).size() == 0) {
+                        binariesToApplyTo = nativeBinaries.findAll {true}
+                    } else {
+                      binariesToApplyTo = nativeBinaries.findAll {
+                            config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
+                        }
                     }
                     binariesToApplyTo.each { binary->
                         binary.lib(new StaticDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
@@ -79,10 +168,5 @@ class DependencyConfigRules extends RuleSource {
                 }
             }
         }
-    }
-
-    @Mutate
-    void doThingWithDeps(ModelMap<Task> tasks, DependencyConfigSpec configs) {
-
     }
 }

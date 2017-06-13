@@ -94,7 +94,6 @@ class JNIConfigRules extends RuleSource {
                         && binary instanceof SharedLibraryBinarySpec) {
                         def input = binary.buildTask.name
                         def checkTaskName = 'check' + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
-                        println checkTaskName
                         tasks.create(checkTaskName) {
                             doLast {
                                 def library = binary.sharedLibraryFile.absolutePath
