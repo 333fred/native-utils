@@ -19,6 +19,9 @@ interface DependencyConfig {
     void setVersion(String version)
     String getVersion()
 
+    void setSortOrder(int sortOrder)
+    int getSortOrder()
+
     @Unmanaged
     void setSharedConfigs(Map<String, List<String>> configs)
     @Unmanaged

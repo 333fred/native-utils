@@ -96,7 +96,9 @@ class DependencyConfigRules extends RuleSource {
 
         def headerClassifiers = []
 
-        configs.each { config->
+        def sortedConfigs = configs.toSorted { a, b -> a.sortOrder<=>b.sortOrder }
+
+        sortedConfigs.each { config->
             headerClassifiers.add(config.headerClassifier)
             currentProject.dependencies {
                 nativeDeps group: config.groupId, name: config.artifactId, version: config.version, classifier: config.headerClassifier, ext: config.ext
@@ -135,7 +137,7 @@ class DependencyConfigRules extends RuleSource {
                 }
             }
         }
-        configs.each { config ->
+        sortedConfigs.each { config ->
             def nativeBinaries = binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }
             nativeBinaries.each { bin ->
                 def component = bin.component
