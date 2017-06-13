@@ -93,24 +93,27 @@ class JNIConfigRules extends RuleSource {
                         && binary.targetPlatform.operatingSystem.name != 'windows'
                         && binary instanceof SharedLibraryBinarySpec) {
                         def input = binary.buildTask.name
-                        def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
-                        def task = tasks.get(linkTaskName)
-                        task.doLast {
-                            def library = task.outputFile.absolutePath
-                            def nmOutput = "${BuildConfigRulesBase.binTools('nm', projectLayout, config)} ${library}".execute().text
+                        def checkTaskName = 'check' + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
+                        println checkTaskName
+                        tasks.create(checkTaskName) {
+                            doLast {
+                                def library = binary.sharedLibraryFile.absolutePath
+                                def nmOutput = "${BuildConfigRulesBase.binTools('nm', projectLayout, config)} ${library}".execute().text
 
-                            def nmSymbols = nmOutput.toString().replace('\r', '')
+                                def nmSymbols = nmOutput.toString().replace('\r', '')
 
-                            def symbolList = getJniSymbols()
+                                def symbolList = getJniSymbols()
 
-                            symbolList.each {
-                                //Add \n so we can check for the exact symbol
-                                def found = nmSymbols.contains(it + '\n')
-                                if (!found) {
-                                    throw new GradleException("Found a definition that does not have a matching symbol ${it}")
+                                symbolList.each {
+                                    //Add \n so we can check for the exact symbol
+                                    def found = nmSymbols.contains(it + '\n')
+                                    if (!found) {
+                                        throw new GradleException("Found a definition that does not have a matching symbol ${it}")
+                                    }
                                 }
                             }
                         }
+                        binary.checkedBy tasks.get(checkTaskName)
                     }
 
                     if (binary.targetPlatform.architecture.name == config.architecture
