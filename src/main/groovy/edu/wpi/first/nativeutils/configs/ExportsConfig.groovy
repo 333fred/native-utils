@@ -13,4 +13,14 @@ interface ExportsConfig extends Named {
 
     void setExcludeBuildTypes(List<String> excludes)
     List<String> getExcludeBuildTypes()
+
+    @Unmanaged
+    void setX86SymbolFilter(Closure closure)
+    @Unmanaged
+    Closure getX86SymbolFilter()
+
+    @Unmanaged
+    void setX64SymbolFilter(Closure closure)
+    @Unmanaged
+    Closure getX64SymbolFilter()
 }

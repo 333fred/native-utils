@@ -64,11 +64,8 @@ class ExportsConfigRules extends RuleSource {
                                         files.each {
                                             args it
                                         }
-
                                     }
-
                                     def lines = []
-
                                     def excludeSymbols
                                     if (binary.targetPlatform.architecture.name == 'x86') {
                                         excludeSymbols = config.x86ExcludeSymbols
@@ -87,9 +84,21 @@ class ExportsConfigRules extends RuleSource {
                                             symbol = symbol.substring(0, space)
                                         }
                                         if (!excludeSymbols.contains(symbol)) {
-                                            lines << line
+                                            lines << symbol
                                         }
                                     }
+
+                                    if (binary.targetPlatform.architecture.name == 'x86') {
+                                        if (config.x86SymbolFilter != null) {
+                                            println "running x86 symbol filter"
+                                            lines = config.x86SymbolFilter(lines);
+                                        }
+                                    } else {
+                                        if (config.x64SymbolFilter != null) {
+                                            lines = config.x64SymbolFilter(lines);
+                                        }
+                                    }
+
                                     defFile.withWriter{ out ->
                                         lines.each {out.println it}
                                     }
