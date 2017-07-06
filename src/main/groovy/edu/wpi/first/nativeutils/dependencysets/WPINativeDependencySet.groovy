@@ -12,10 +12,10 @@ public abstract class WPINativeDependencySet implements NativeDependencySet {
     protected String m_libraryName
 
     public WPINativeDependencySet(String rootLocation, NativeBinarySpec binarySpec, String libraryName, Project project) {
-      m_rootLocation = rootLocation
-      m_binarySpec = binarySpec
-      m_libraryName = libraryName
-      m_project = project
+        m_rootLocation = rootLocation
+        m_binarySpec = binarySpec
+        m_libraryName = libraryName
+        m_project = project
     }
 
     public FileCollection getIncludeRoots() {

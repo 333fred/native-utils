@@ -47,7 +47,6 @@ class BuildConfigRules extends RuleSource {
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
 
-
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('publishingConfigs')
     void createPublishingConfigs(PublishingConfigSpec configs) {}

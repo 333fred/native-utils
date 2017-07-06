@@ -18,7 +18,9 @@ public class SharedDependencySet extends WPINativeDependencySet {
         if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows' && !isRuntime) {
             fileList = fileList.filter { it.toString().endsWith('.lib') }
         } else if (m_binarySpec.targetPlatform.operatingSystem.name == 'windows') {
-                fileList = fileList.filter { it.toString().endsWith('.dll') }
+            fileList = fileList.filter { it.toString().endsWith('.dll') }
+        } else {
+            fileList = fileList.filter { it.toString().endsWith('.so') }
         }
 
         return m_project.files(fileList.files)

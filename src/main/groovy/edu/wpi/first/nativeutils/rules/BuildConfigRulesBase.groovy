@@ -76,15 +76,24 @@ class BuildConfigRulesBase  {
         return config.detectPlatform(config)
     }
 
+    private static final Map<BuildConfig, Boolean> existingToolChains = [:]
+
     static boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {
         if (!isCrossCompile(config)) {
             return true;
         }
 
-        def path = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
+        if (existingToolChains.containsKey(config)) {
+            return existingToolChains.get(config)
+        }
 
+        def path = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
         def toolPath = path == null ? "" : path
 
-        return toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable();
+        boolean foundToolChain = toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable()
+
+        existingToolChains.put(config, foundToolChain)
+
+        return foundToolChain
     }
 }

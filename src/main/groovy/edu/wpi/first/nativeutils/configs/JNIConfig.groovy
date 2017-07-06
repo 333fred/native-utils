@@ -7,17 +7,19 @@ import org.gradle.api.tasks.SourceSet
 @Managed
 interface JNIConfig extends Named {
     @SuppressWarnings("GroovyUnusedDeclaration")
-        void setJniDefinitionClasses(List<String> classes)
+    void setJniDefinitionClasses(List<String> classes)
 
-        List<String> getJniDefinitionClasses()
+    List<String> getJniDefinitionClasses()
 
-        @Unmanaged
-        void setJniArmHeaderLocations(Map<String, File> locations)
-        @Unmanaged
-        Map<String, File> getJniArmHeaderLocations()
+    @Unmanaged
+    void setJniArmHeaderLocations(Map<String, File> locations)
 
-        @Unmanaged
-        void setSourceSets(List<SourceSet> sources)
-        @Unmanaged
-        List<SourceSet> getSourceSets()
+    @Unmanaged
+    Map<String, File> getJniArmHeaderLocations()
+
+    @Unmanaged
+    void setSourceSets(List<SourceSet> sources)
+
+    @Unmanaged
+    List<SourceSet> getSourceSets()
 }

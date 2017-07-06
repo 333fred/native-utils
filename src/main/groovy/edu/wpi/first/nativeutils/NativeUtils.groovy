@@ -13,7 +13,7 @@ import edu.wpi.first.nativeutils.configs.CrossBuildConfig
  * Created by 333fr on 3/1/2017.
  */
 public class NativeUtils implements Plugin<Project> {
-    private static final HashMap<BuildConfig, String> toolChainPathCache = new HashMap<>()
+    private static final Map<BuildConfig, String> toolChainPathCache = [:]
 
     /**
      * Gets the toolChainPath for the specific build configuration
@@ -43,7 +43,7 @@ public class NativeUtils implements Plugin<Project> {
         return config.toolChainPath
     }
 
-    static final ArrayList<BuildConfig> buildConfigs = new ArrayList<>();
+    static final List<BuildConfig> buildConfigs = []
 
     /**
      * Gets the toolChainPath for the specific build configuration
