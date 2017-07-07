@@ -137,34 +137,21 @@ class DependencyConfigRules extends RuleSource {
                 }
             }
         }
+
         sortedConfigs.each { config ->
             def nativeBinaries = binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }
-            nativeBinaries.each { bin ->
-                def component = bin.component
+            nativeBinaries.each { binary ->
+                def component = binary.component
                 if (config.sharedConfigs != null && config.sharedConfigs.containsKey(component.name)) {
-                    def binariesToApplyTo
-                    if (config.sharedConfigs.get(component.name).size() == 0) {
-                        binariesToApplyTo = nativeBinaries.findAll {true}
-                    } else {
-                      binariesToApplyTo = nativeBinaries.findAll {
-                            config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
-                        }
-                    }
-                    binariesToApplyTo.each { binary->
+                    if (config.sharedConfigs.get(component.name).size() == 0 ||
+                        config.sharedConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())) {
                         binary.lib(new SharedDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
                     }
                 }
 
                 if (config.staticConfigs != null && config.staticConfigs.containsKey(component.name)) {
-                    def binariesToApplyTo
-                    if (config.staticConfigs.get(component.name).size() == 0) {
-                        binariesToApplyTo = nativeBinaries.findAll {true}
-                    } else {
-                      binariesToApplyTo = nativeBinaries.findAll {
-                            config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())
-                        }
-                    }
-                    binariesToApplyTo.each { binary->
+                    if (config.staticConfigs.get(component.name).size() == 0 ||
+                        config.staticConfigs.get(component.name).contains("${it.targetPlatform.operatingSystem.name}:${it.targetPlatform.architecture.name}".toString())) {
                         binary.lib(new StaticDependencySet("$depLocation/${config.artifactId.toLowerCase()}", binary, config.artifactId, currentProject))
                     }
                 }
