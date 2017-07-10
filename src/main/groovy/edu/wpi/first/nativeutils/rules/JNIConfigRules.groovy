@@ -91,7 +91,8 @@ class JNIConfigRules extends RuleSource {
                     if (binary.targetPlatform.architecture.name == config.architecture
                         && binary.targetPlatform.operatingSystem.name == config.operatingSystem
                         && binary.targetPlatform.operatingSystem.name != 'windows'
-                        && binary instanceof SharedLibraryBinarySpec) {
+                        && binary instanceof SharedLibraryBinarySpec
+                        && !jniConfig.skipSymbolCheck) {
                         def input = binary.buildTask.name
                         def checkTaskName = 'check' + input.substring(0, 1).toUpperCase() + input.substring(1) + "JniSymbols";
                         tasks.create(checkTaskName) {

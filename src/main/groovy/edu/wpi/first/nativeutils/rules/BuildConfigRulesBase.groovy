@@ -66,7 +66,7 @@ class BuildConfigRulesBase  {
      * or specific cross compiler is specified
      */
     static boolean isConfigEnabled(BuildConfig config, ProjectLayout projectLayout) {
-        if (isCrossCompile(config)) {
+        if (isCrossCompile(config) && NativeUtils.getCrossConfigEnabledCmdLine(config, projectLayout.projectIdentifier)) {
             return doesToolChainExist(config, projectLayout)
         }
         if (!config.detectPlatform) {

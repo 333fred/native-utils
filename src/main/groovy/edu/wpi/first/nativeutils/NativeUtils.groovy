@@ -13,6 +13,48 @@ import edu.wpi.first.nativeutils.configs.CrossBuildConfig
  * Created by 333fr on 3/1/2017.
  */
 public class NativeUtils implements Plugin<Project> {
+    private static final Map<CrossBuildConfig, Boolean> enabledConfigCache = [:]
+
+    public static boolean getCrossConfigEnabledCmdLine(CrossBuildConfig config, Project project) {
+        if (!config.skipByDefault) {
+            return true
+        }
+
+        if (enabledConfigCache.containsKey(config)) {
+            return enabledConfigCache.get(config)
+        }
+
+        for (item in project.properties) {
+            def key = item.key
+            def value = item.value
+            if (key.contains('-toolChainPath')) {
+                String[] configSplit = key.split("-", 2);
+                if (value != null && configSplit.length == 2 && configSplit[0] != "") {
+                    if (configSplit[0] == config.architecture) {
+                        enabledConfigCache.put(config, true)
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Try get command line enable
+        for (item in project.properties) {
+            def key = item.key
+            if (key.contains('-enableCross')) {
+                String[] configSplit = key.split("-", 2);
+                if (configSplit[0] == config.architecture) {
+                    enabledConfigCache.put(config, true)
+                    return true
+                }
+            }
+        }
+
+        enabledConfigCache.put(config, false)
+        return false
+    }
+
+
     private static final Map<BuildConfig, String> toolChainPathCache = [:]
 
     /**
@@ -26,6 +68,7 @@ public class NativeUtils implements Plugin<Project> {
         if (toolChainPathCache.containsKey(config)) {
             return toolChainPathCache.get(config)
         }
+        // Try getting the toolChainPath
         for (item in project.properties) {
             def key = item.key
             def value = item.value
@@ -39,6 +82,7 @@ public class NativeUtils implements Plugin<Project> {
                 }
             }
         }
+
         toolChainPathCache.put(config, config.toolChainPath)
         return config.toolChainPath
     }

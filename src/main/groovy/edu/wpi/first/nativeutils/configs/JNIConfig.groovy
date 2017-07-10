@@ -22,4 +22,8 @@ interface JNIConfig extends Named {
 
     @Unmanaged
     List<SourceSet> getSourceSets()
+
+    void setSkipSymbolCheck(boolean skip)
+
+    boolean getSkipSymbolCheck()
 }

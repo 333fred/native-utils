@@ -60,7 +60,8 @@ class PublishingConfigRules extends RuleSource {
                                 if (binary.targetPlatform.architecture.name == config.architecture
                                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem
                                     && binary.buildType.name == buildType.name
-                                    && binary.component.name == component.name) {
+                                    && binary.component.name == component.name
+                                    && binary.buildable) {
                                     if (binary instanceof SharedLibraryBinarySpec) {
                                         dependsOn binary.buildTask
                                         from(new File(binary.sharedLibraryFile.absolutePath + ".debug")) {
