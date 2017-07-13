@@ -33,10 +33,8 @@ class JNIConfigRules extends RuleSource {
     void createJniTasks(ModelMap<Task> tasks, JNIConfigSpec jniConfigs, ProjectLayout projectLayout,
                         BinaryContainer binaries, BuildTypeContainer buildTypes, BuildConfigSpec configs) {
         def project = projectLayout.projectIdentifier
-
         jniConfigs.each { jniConfig->
             def generatedJNIHeaderLoc = "${project.buildDir}/${jniConfig.name}/jniinclude"
-
             def headerTaskName = "${jniConfig.name}jniHeaders"
             tasks.create(headerTaskName) {
                 def outputFolder = project.file(generatedJNIHeaderLoc)
@@ -48,8 +46,10 @@ class JNIConfigRules extends RuleSource {
                     outputFolder.mkdirs()
                     def classPath = StringBuilder.newInstance()
                     jniConfig.sourceSets.each {
-                        classPath << it.output.classesDir
-                        classPath << ';'
+                        it.output.classesDirs.each {
+                            classPath << it
+                            classPath << ';'
+                        }
                     }
                     project.exec {
                         executable org.gradle.internal.jvm.Jvm.current().getExecutable('javah')
