@@ -165,16 +165,20 @@ class BuildConfigRules extends RuleSource {
                     if (binary.targetPlatform.operatingSystem.name == 'osx') {
                         def library = task.outputFile.absolutePath
                         task.doLast {
-                            project.exec { commandLine "dsymutil", library }
-                            project.exec { commandLine "strip", '-S', library }
+                            if (new File(library).exists()) {
+                                project.exec { commandLine "dsymutil", library }
+                                project.exec { commandLine "strip", '-S', library }
+                            }
                         }
                     } else {
                         def library = task.outputFile.absolutePath
                         def debugLibrary = task.outputFile.absolutePath + ".debug"
                         task.doLast {
-                            project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), '--only-keep-debug', library, debugLibrary }
-                            project.exec { commandLine BuildConfigRulesBase.binTools('strip', projectLayout, config), '-g', library }
-                            project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), "--add-gnu-debuglink=$debugLibrary", library }
+                            if (new File(library).exists()) {
+                                project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), '--only-keep-debug', library, debugLibrary }
+                                project.exec { commandLine BuildConfigRulesBase.binTools('strip', projectLayout, config), '-g', library }
+                                project.exec { commandLine BuildConfigRulesBase.binTools('objcopy', projectLayout, config), "--add-gnu-debuglink=$debugLibrary", library }
+                            }
                         }
                     }
                 }

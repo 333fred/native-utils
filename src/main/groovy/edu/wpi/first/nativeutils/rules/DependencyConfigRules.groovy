@@ -87,7 +87,7 @@ class DependencyConfigRules extends RuleSource {
     }
 
     @Mutate
-    void setupDependencies(ModelMap<Task> tasks, DependencyConfigSpec configs, BinaryContainer binaries,
+    void setupDependencyDownloads(ModelMap<Task> tasks, DependencyConfigSpec configs, BinaryContainer binaries,
                         ProjectLayout projectLayout, BuildConfigSpec buildConfigs) {
         def rootProject = projectLayout.projectIdentifier.rootProject
         def currentProject = projectLayout.projectIdentifier
@@ -137,6 +137,17 @@ class DependencyConfigRules extends RuleSource {
                 }
             }
         }
+    }
+
+    @Validate
+    void setupDependencies(BinaryContainer binaries, DependencyConfigSpec configs, 
+                        ProjectLayout projectLayout, BuildConfigSpec buildConfigs) {
+        def rootProject = projectLayout.projectIdentifier.rootProject
+        def currentProject = projectLayout.projectIdentifier
+
+        def sortedConfigs = configs.toSorted { a, b -> a.sortOrder<=>b.sortOrder }
+
+        def depLocation = "${rootProject.buildDir}/dependencies"
 
         sortedConfigs.each { config ->
             def nativeBinaries = binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }
