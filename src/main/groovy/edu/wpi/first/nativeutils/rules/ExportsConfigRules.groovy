@@ -90,7 +90,6 @@ class ExportsConfigRules extends RuleSource {
 
                                     if (binary.targetPlatform.architecture.name == 'x86') {
                                         if (config.x86SymbolFilter != null) {
-                                            println "running x86 symbol filter"
                                             lines = config.x86SymbolFilter(lines);
                                         }
                                     } else {
