@@ -34,8 +34,6 @@ interface BuildConfigSpec extends ModelMap<BuildConfig> {}
 
 interface DependencyConfigSpec extends ModelMap<DependencyConfig> {}
 
-interface PublishingConfigSpec extends ModelMap<PublishingConfig> {}
-
 interface ExportsConfigSpec extends ModelMap<ExportsConfig> {}
 
 interface JNIConfigSpec extends ModelMap<JNIConfig> {}
@@ -46,10 +44,6 @@ class BuildConfigRules extends RuleSource {
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('buildConfigs')
     void createBuildConfigs(BuildConfigSpec configs) {}
-
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Model('publishingConfigs')
-    void createPublishingConfigs(PublishingConfigSpec configs) {}
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Model('dependencyConfigs')
