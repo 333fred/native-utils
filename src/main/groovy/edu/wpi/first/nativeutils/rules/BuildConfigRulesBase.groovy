@@ -2,6 +2,7 @@ package edu.wpi.first.nativeutils.rules
 
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.language.base.internal.ProjectLayout
+import org.gradle.api.internal.project.ProjectIdentifier
 import org.gradle.model.*
 import org.gradle.nativeplatform.BuildTypeContainer
 import org.gradle.nativeplatform.NativeBinarySpec
@@ -65,9 +66,9 @@ class BuildConfigRulesBase  {
      * If a config is crosscompiling, only enable for athena. Otherwise, only enable if the current os is the config os,
      * or specific cross compiler is specified
      */
-    static boolean isConfigEnabled(BuildConfig config, ProjectLayout projectLayout) {
-        if (isCrossCompile(config) && NativeUtils.getCrossConfigEnabledCmdLine(config, projectLayout.projectIdentifier)) {
-            return doesToolChainExist(config, projectLayout)
+    static boolean isConfigEnabled(BuildConfig config, ProjectIdentifier projectIdentifier) {
+        if (isCrossCompile(config) && NativeUtils.getCrossConfigEnabledCmdLine(config, projectIdentifier)) {
+            return doesToolChainExist(config, projectIdentifier)
         }
         if (!config.detectPlatform) {
             return false
@@ -78,7 +79,7 @@ class BuildConfigRulesBase  {
 
     private static final Map<BuildConfig, Boolean> existingToolChains = [:]
 
-    static boolean doesToolChainExist(BuildConfig config, ProjectLayout projectLayout) {
+    static boolean doesToolChainExist(BuildConfig config, ProjectIdentifier projectIdentifier) {
         if (!isCrossCompile(config)) {
             return true;
         }
@@ -87,7 +88,7 @@ class BuildConfigRulesBase  {
             return existingToolChains.get(config)
         }
 
-        def path = NativeUtils.getToolChainPath(config, projectLayout.projectIdentifier)
+        def path = NativeUtils.getToolChainPath(config, projectIdentifier)
         def toolPath = path == null ? "" : path
 
         boolean foundToolChain = toolSearchPath.locate(ToolType.CPP_COMPILER, toolPath + config.toolChainPrefix + "g++").isAvailable()

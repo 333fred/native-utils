@@ -78,12 +78,13 @@ class ExportsConfigRules extends RuleSource {
                                     }
 
                                     defFile.eachLine { line->
+                                        
                                         def symbol = line.trim()
                                         def space = symbol.indexOf(' ')
                                         if (space != -1) {
                                             symbol = symbol.substring(0, space)
                                         }
-                                        if (!excludeSymbols.contains(symbol)) {
+                                        if (symbol != 'EXPORTS' && !excludeSymbols.contains(symbol)) {
                                             lines << symbol
                                         }
                                     }
@@ -99,6 +100,7 @@ class ExportsConfigRules extends RuleSource {
                                     }
 
                                     defFile.withWriter{ out ->
+                                        out.println 'EXPORTS'
                                         lines.each {out.println it}
                                     }
                                 }

@@ -103,7 +103,7 @@ class DependencyConfigRules extends RuleSource {
             currentProject.dependencies {
                 nativeDeps group: config.groupId, name: config.artifactId, version: config.version, classifier: config.headerClassifier, ext: config.ext
             }
-            buildConfigs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { buildConfig ->
+            buildConfigs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) }.each { buildConfig ->
                 currentProject.dependencies {
                     nativeDeps group: config.groupId, name: config.artifactId, version: config.version, classifier: NativeUtils.getClassifier(buildConfig), ext: config.ext
                 }

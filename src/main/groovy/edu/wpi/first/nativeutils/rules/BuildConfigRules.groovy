@@ -79,7 +79,7 @@ class BuildConfigRules extends RuleSource {
     @Validate
     void setTargetPlatforms(ComponentSpecContainer components, ProjectLayout projectLayout, BuildConfigSpec configs) {
         components.each { component ->
-            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) }.each { config ->
                 if (config.include == null || config.include.size() == 0) {
                     if (config.exclude == null || !config.exclude.contains(component.name)) {
                         component.targetPlatform config.architecture
@@ -146,7 +146,7 @@ class BuildConfigRules extends RuleSource {
     @Mutate
     void createStripTasks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
         def project = projectLayout.projectIdentifier
-        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) }.each { config ->
             binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
                 if (binary.targetPlatform.architecture.name == config.architecture
                     && binary.targetPlatform.operatingSystem.name == config.operatingSystem
@@ -200,7 +200,7 @@ class BuildConfigRules extends RuleSource {
             return
         }
 
-        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) }.each { config ->
             if (config.architecture != null) {
                 platforms.create(config.architecture) { platform ->
                     platform.architecture config.architecture
@@ -219,7 +219,7 @@ class BuildConfigRules extends RuleSource {
         }
 
         def enabledConfigs = configs.findAll {
-            BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
+            BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) && (it.debugCompilerArgs != null || it.debugLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
@@ -245,7 +245,7 @@ class BuildConfigRules extends RuleSource {
         }
 
         def enabledConfigs = configs.findAll {
-            BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
+            BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) && (it.releaseCompilerArgs != null || it.releaseLinkerArgs != null)
         }
         if (enabledConfigs == null || enabledConfigs.empty) {
             return
@@ -264,13 +264,6 @@ class BuildConfigRules extends RuleSource {
         }
     }
 
-    @Validate
-    void storeAllBuildConfigs(BuildConfigSpec configs, ProjectLayout projectLayout) {
-        configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each {
-            NativeUtils.buildConfigs.add(it)
-        }
-    }
-
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Mutate
     void createToolChains(NativeToolChainRegistry toolChains, ProjectLayout projectLayout, BuildConfigSpec configs) {
@@ -278,7 +271,7 @@ class BuildConfigRules extends RuleSource {
             return
         }
 
-        def vcppConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'VisualCpp' }
+        def vcppConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) && it.compilerFamily == 'VisualCpp' }
         if (vcppConfigs != null && !vcppConfigs.empty) {
             toolChains.create('visualCpp', VisualCpp.class) { t ->
                 t.eachPlatform { toolChain ->
@@ -307,7 +300,7 @@ class BuildConfigRules extends RuleSource {
             }
         }
 
-        def gccConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Gcc' }
+        def gccConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) && it.compilerFamily == 'Gcc' }
         if (gccConfigs != null && !gccConfigs.empty) {
             toolChains.create('gcc', Gcc.class) {
                 gccConfigs.each { config ->
@@ -339,7 +332,7 @@ class BuildConfigRules extends RuleSource {
             }
         }
 
-        def clangConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) && it.compilerFamily == 'Clang' }
+        def clangConfigs = configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) && it.compilerFamily == 'Clang' }
         if (clangConfigs != null && !clangConfigs.empty) {
             toolChains.create('clang', Clang.class) {
                 clangConfigs.each { config ->

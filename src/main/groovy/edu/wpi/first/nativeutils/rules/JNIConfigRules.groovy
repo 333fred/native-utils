@@ -86,7 +86,7 @@ class JNIConfigRules extends RuleSource {
                 return symbolsList
             }
 
-            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout) }.each { config ->
+            configs.findAll { BuildConfigRulesBase.isConfigEnabled(it, projectLayout.projectIdentifier) }.each { config ->
                 binaries.findAll { BuildConfigRulesBase.isNativeProject(it)  && (it.component.name == jniConfig.name || it.component.name == "${jniConfig.name}Test".toString()) }.each { binary ->
                     if (binary.targetPlatform.architecture.name == config.architecture
                         && binary.targetPlatform.operatingSystem.name == config.operatingSystem

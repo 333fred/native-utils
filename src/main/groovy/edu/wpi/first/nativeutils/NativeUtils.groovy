@@ -3,6 +3,7 @@ package edu.wpi.first.nativeutils
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.internal.os.OperatingSystem
+import org.gradle.api.internal.project.ProjectIdentifier
 import org.gradle.nativeplatform.NativeBinarySpec
 import org.gradle.nativeplatform.Tool
 import edu.wpi.first.nativeutils.configs.BuildConfig
@@ -87,13 +88,8 @@ public class NativeUtils implements Plugin<Project> {
         return config.toolChainPath
     }
 
-    static final List<BuildConfig> buildConfigs = []
-
-    /**
-     * Gets the toolChainPath for the specific build configuration
-     */
-    public static ArrayList<BuildConfig> getBuildConfigs() {
-        return buildConfigs
+    public static boolean isConfigEnabled(BuildConfig config, ProjectIdentifier identifier) {
+        return BuildConfigRulesBase.isConfigEnabled(config, identifier)
     }
 
     /**
