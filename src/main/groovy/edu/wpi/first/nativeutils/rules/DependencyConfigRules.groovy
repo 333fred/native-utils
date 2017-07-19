@@ -86,6 +86,25 @@ class DependencyConfigRules extends RuleSource {
         }
     }
 
+    @Validate
+    void createDoubleLinks(ModelMap<Task> tasks, BinaryContainer binaries, ProjectLayout projectLayout, BuildConfigSpec configs) {
+        def project = projectLayout.projectIdentifier
+            binaries.findAll { BuildConfigRulesBase.isNativeProject(it) }.each { binary ->
+                def input = binary.buildTask.name
+                def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
+                def task = tasks.get(linkTaskName)
+                if (task != null) {
+                task.doFirst {
+                    binary.libs.each {
+                        it.linkFiles.each {
+                            binary.linker.args it.toString()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Mutate
     void setupDependencyDownloads(ModelMap<Task> tasks, DependencyConfigSpec configs, BinaryContainer binaries,
                         ProjectLayout projectLayout, BuildConfigSpec buildConfigs) {
