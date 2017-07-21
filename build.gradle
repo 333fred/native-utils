@@ -1,33 +1,45 @@
 plugins {
-    id 'groovy'
-    id 'java-gradle-plugin'
-    id 'maven-publish'
+    id "com.gradle.plugin-publish" version "0.9.5"
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
 }
 
+apply plugin: 'groovy'
+apply plugin: 'maven-publish'
+
 dependencies {
+    compile gradleApi()
     compile localGroovy()
 }
 
-gradlePlugin {
-    plugins {
-        NativeUtils {
-            id = 'edu.wpi.first.native-utils'
-            implementationClass = 'edu.wpi.first.nativeutils.NativeUtils'
-        }
-    }
+repositories {
+    jcenter()
 }
-
-version = '0.1-SNAPSHOT'
-group = 'edu.wpi.first'
 
 publishing {
     publications {
         plugin(MavenPublication) {
-            artifact jar
+            artifact shadowJar
+        }
+    }
+}
+
+version = '0.1-beta'
+group = 'edu.wpi.first'
+
+pluginBundle {
+    website = 'https://github.com/ThadHouse/native-utils'
+    vcsUrl = 'https://github.com/ThadHouse/native-utils'
+    description = 'This plugin provides native build utilities for FRC projects.'
+    tags = ['groovy', 'version', 'maven', 'frc', 'wpilib']
+
+    plugins {
+        NativeUtils {
+            id = 'edu.wpi.first.nativeutils.NativeUtils'
+            displayName = 'WPILib NativeUtils'
         }
     }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.3'
+    gradleVersion = '4.0.1'
 }
