@@ -53,8 +53,7 @@ class ExportsConfigRules extends RuleSource {
                                 binary.linker.args "/DEF:${defFile}"
 
                                 def input = binary.buildTask.name
-                                def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
-                                def task = tasks.get(linkTaskName)
+                                def task = binary.tasks.link
                                 task.doFirst {
                                     def exeName = NativeUtils.getGeneratorFilePath();
                                     def files = project.fileTree(objDir).include("**/*.obj")

@@ -154,8 +154,7 @@ class BuildConfigRules extends RuleSource {
                     && binary.targetPlatform.operatingSystem.name != 'windows'
                     && binary instanceof SharedLibraryBinarySpec) {
                     def input = binary.buildTask.name
-                    def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
-                    def task = tasks.get(linkTaskName)
+                    def task = binary.tasks.link
                     if (binary.targetPlatform.operatingSystem.name == 'osx') {
                         def library = task.outputFile.absolutePath
                         task.doLast {
