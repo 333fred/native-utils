@@ -13,7 +13,7 @@ import org.gradle.platform.base.BinaryContainer
 import org.gradle.platform.base.ComponentSpecContainer
 import org.gradle.api.file.FileTree
 import org.gradle.internal.os.OperatingSystem
-import edu.wpi.first.nativeutils.ExportsUtils
+import edu.wpi.first.nativeutils.NativeUtils
 
 @SuppressWarnings("GroovyUnusedDeclaration")
 class ExportsConfigRules extends RuleSource {
@@ -56,7 +56,7 @@ class ExportsConfigRules extends RuleSource {
                                 def linkTaskName = 'link' + input.substring(0, 1).toUpperCase() + input.substring(1);
                                 def task = tasks.get(linkTaskName)
                                 task.doFirst {
-                                    def exeName = ExportsUtils.getGeneratorFilePath();
+                                    def exeName = NativeUtils.getGeneratorFilePath();
                                     def files = project.fileTree(objDir).include("**/*.obj")
                                     project.exec {
                                         executable = exeName

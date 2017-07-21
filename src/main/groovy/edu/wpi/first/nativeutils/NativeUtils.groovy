@@ -14,6 +14,34 @@ import edu.wpi.first.nativeutils.configs.CrossBuildConfig
  * Created by 333fr on 3/1/2017.
  */
 public class NativeUtils implements Plugin<Project> {
+
+    static File extractedFile = null
+
+    static String getGeneratorFilePath() {
+        if (extractedFile != null) {
+            return extractedFile.toString()
+        }
+
+        InputStream is = NativeUtils.class.getResourceAsStream("/DefFileGenerator.exe");
+        extractedFile = File.createTempFile("DefFileGenerator", ".exe")
+        extractedFile.deleteOnExit();
+
+        OutputStream os = new FileOutputStream(extractedFile);
+
+        byte[] buffer = new byte[1024];
+        int readBytes;
+        try {
+            while ((readBytes = is.read(buffer)) != -1) {
+            os.write(buffer, 0, readBytes);
+            }
+        } finally {
+            os.close();
+            is.close();
+        }
+
+        return extractedFile.toString()
+    }
+
     private static final Map<CrossBuildConfig, Boolean> enabledConfigCache = [:]
 
     public static boolean getCrossConfigEnabledCmdLine(CrossBuildConfig config, Project project) {
@@ -137,5 +165,17 @@ public class NativeUtils implements Plugin<Project> {
         project.ext.CrossBuildConfig = edu.wpi.first.nativeutils.configs.CrossBuildConfig
 
         project.pluginManager.apply(edu.wpi.first.nativeutils.rules.BuildConfigRules)
+
+        project.ext.DependencyConfig = edu.wpi.first.nativeutils.configs.DependencyConfig
+
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.DependencyConfigRules)
+
+        project.ext.JNIConfig = edu.wpi.first.nativeutils.configs.JNIConfig
+
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.JNIConfigRules)
+
+        project.ext.ExportsConfig = edu.wpi.first.nativeutils.configs.ExportsConfig
+
+        project.pluginManager.apply(edu.wpi.first.nativeutils.rules.ExportsConfigRules)
     }
 }
